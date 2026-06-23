@@ -61,6 +61,9 @@ pub enum SfsContent {
     #[serde(rename = "initUserData")]
     InitUserData(InitUserDataPayload),
 
+    #[serde(rename = "initUserDatas")]
+    InitUserDatas(Vec<InitUserDataPayload>),
+
     #[serde(rename = "stu")]
     StatUpdate(StatUpdatePayload),
 }

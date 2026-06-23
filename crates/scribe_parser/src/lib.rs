@@ -1,7 +1,4 @@
 pub mod events;
-
-use std::process::Output;
-
 use scribe_core::IdentityMapper;
 use scribe_core::models::{SfsEnvelope, SfsContent};
 use events::{ScribeEvent, AuraTimelineDelta, StatTimelineDelta};
@@ -22,15 +19,18 @@ impl ScribeParser {
         let envelope: SfsEnvelope = match serde_json::from_str(raw_json) {
             Ok(env) => env,
             Err(e) => {
-                eprintln!("Failed to parse packet: {}", e);
+                if cfg!(debug_assertions) {
+                    eprintln!("Failed to parse packet: {}", e);
+                }
                 return Vec::new();
             }
         };
 
         match envelope.b.o {
             
+            
             SfsContent::MoveToArea(payload) => {
-                for player in payload.uoBranch {
+                for player in payload.uo_branch {
                     if let Some(ent_id) = player.ent_id {
                         self.identity_mapper.register_player(ent_id, &player.username);
                     }
@@ -84,6 +84,20 @@ impl ScribeParser {
                     access_level: payload.data.access_level,
                     class_name: payload.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
                 });
+            }
+
+            SfsContent::InitUserDatas(payload) => {
+                for data in payload {
+                    self.identity_mapper.register_player(data.uid, &data.data.username);
+                    self.identity_mapper.register_staff_level(data.uid, data.data.access_level);
+                
+                    output.push(ScribeEvent::UserDataInitialized {
+                        username: data.data.username,
+                        uid: data.uid,
+                        access_level: data.data.access_level,
+                        class_name: data.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
+                    });
+                }
             }
 
             SfsContent::Combat(payload) => {

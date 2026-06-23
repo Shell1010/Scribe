@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MoveToAreaPayload {
     #[serde(default)]
-    pub uoBranch: Vec<PlayerBranch>,
+    pub uo_branch: Vec<PlayerBranch>,
     #[serde(default)]
     pub mondef: Vec<MonsterDefinition>,
 }

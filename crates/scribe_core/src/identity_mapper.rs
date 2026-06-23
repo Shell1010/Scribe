@@ -23,23 +23,26 @@ pub struct IdentityMapper {
     access_levels: Arc<RwLock<HashMap<u32, i32>>>,
 }
 
+impl Default for IdentityMapper {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IdentityMapper {
     pub fn new() -> Self {
         let mut loaded_players = HashMap::new();
         let mut loaded_monsters = HashMap::new();
         let mut loaded_access_levels = HashMap::new();
 
-        if Path::new(CACHE_PATH).exists() {
-            if let Ok(mut file) = File::open(CACHE_PATH) {
-                let mut content = String::new();
-                if file.read_to_string(&mut content).is_ok() {
-                    if let Ok(decoded) = serde_json::from_str::<DiskCacheStructure>(&content) {
-                        loaded_players = decoded.players;
-                        loaded_monsters = decoded.monsters;
-                        loaded_access_levels = decoded.access_levels;
-                    }
-                }
+        if Path::new(CACHE_PATH).exists() && let Ok(mut file) = File::open(CACHE_PATH) {
+            let mut content = String::new();
+            if file.read_to_string(&mut content).is_ok() && let Ok(decoded) = serde_json::from_str::<DiskCacheStructure>(&content) {
+                loaded_players = decoded.players;
+                loaded_monsters = decoded.monsters;
+                loaded_access_levels = decoded.access_levels;
             }
+            
         }
 
         Self {
@@ -61,26 +64,21 @@ impl IdentityMapper {
             access_levels: a_lock.clone(),
         };
 
-        if let Ok(serialized) = serde_json::to_string_pretty(&payload) {
-            if let Ok(mut file) = File::create(&self.cache_file) {
-                let _ = file.write_all(serialized.as_bytes());
-            }
+        if let Ok(serialized) = serde_json::to_string_pretty(&payload) && let Ok(mut file) = File::create(&self.cache_file) {
+            let _ = file.write_all(serialized.as_bytes());
         }
     }
 
     pub fn register_player(&self, id: u32, name: &str) {
         let mut modified = false;
-        if let Ok(mut p_map) = self.players.write() {
-            if p_map.insert(id, name.to_string()).is_none() || p_map.get(&id).map(|s| s != name).unwrap_or(false) {
-                modified = true;
-            }
+        if let Ok(mut p_map) = self.players.write() && (p_map.insert(id, name.to_string()).is_none() || p_map.get(&id).map(|s| s != name).unwrap_or(false)) {
+            modified = true;
+            
         }
 
-        if let Ok(mut a_map) = self.access_levels.write() {
-            if !a_map.contains_key(&id) {
-                a_map.insert(id, 0);
-                modified = true;
-            }
+        if let Ok(mut a_map) = self.access_levels.write() && !a_map.contains_key(&id) {
+            a_map.insert(id, 0);
+            modified = true;
         }
 
         if modified { self.sync_to_disk(); }
@@ -88,56 +86,39 @@ impl IdentityMapper {
 
     pub fn register_staff_level(&self, id: u32, access_level: i32) {
         let mut modified = false;
-        if let Ok(mut map) = self.access_levels.write() {
-            if map.insert(id, access_level).is_none() || map.get(&id).copied().unwrap_or(0) != access_level {
-                modified = true;
-            }
+        if let Ok(mut map) = self.access_levels.write() && (map.insert(id, access_level).is_none() || map.get(&id).copied().unwrap_or(0) != access_level) {
+            modified = true;
         }
         if modified { self.sync_to_disk(); }
     }
 
     pub fn register_monster(&self, id: u32, name: &str) {
         let mut modified = false;
-        if let Ok(mut map) = self.monsters.write() {
-            if map.insert(id, name.to_string()).is_none() || map.get(&id).map(|s| s != name).unwrap_or(false) {
-                modified = true;
-            }
+        if let Ok(mut map) = self.monsters.write() && (map.insert(id, name.to_string()).is_none() || map.get(&id).map(|s| s != name).unwrap_or(false)) {
+            modified = true;
         }
         if modified { self.sync_to_disk(); }
     }
 
     pub fn resolve_actor(&self, actor_token: &str) -> String {
-        if actor_token.starts_with("m:") {
-            if let Ok(id) = actor_token[2..].parse::<u32>() {
-                if let Ok(map) = self.monsters.read() {
-                    if let Some(name) = map.get(&id) {
-                        return name.clone();
-                    }
-                }
-                return format!("Unknown Monster ({})", id); 
+        if let Some(id_str) = actor_token.strip_prefix("m:") && let Ok(id) = id_str.parse::<u32>() && let Ok(map) = self.monsters.read() {
+            if let Some(name) = map.get(&id) {
+                return name.clone();
             }
+            return format!("Unknown Monster ({})", id); 
+            
         }
 
-        if actor_token.starts_with("p:") {
-            if let Ok(id) = actor_token[2..].parse::<u32>() {
-                if let Ok(p_map) = self.players.read() {
-                    if let Some(name) = p_map.get(&id) {
-                        
-                        
-                        if let Ok(a_map) = self.access_levels.read() {
-                            if let Some(&level) = a_map.get(&id) {
-                                if level > 0 {
-                                    return format!("[STAFF:{}] {}", level, name);
-                                }
-                            }
-                        }
-                        
-                        return name.clone();
-                    }
+        if let Some(id_str) = actor_token.strip_prefix("p:") && let Ok(id) = id_str.parse::<u32>() {
+            if let Ok(p_map) = self.players.read() && let Some(name) = p_map.get(&id) {
+                if let Ok(a_map) = self.access_levels.read() && let Some(&level) = a_map.get(&id) && level > 0 {
+                    return format!("[STAFF:{}] {}", level, name);
                 }
-                return format!("Unknown Player ({})", id);
+                return name.clone();
             }
+            return format!("Unknown Player ({})", id);
         }
+        
 
 
         actor_token.to_string()

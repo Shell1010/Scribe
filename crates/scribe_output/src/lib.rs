@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use scribe_parser::events::{ScribeEvent, AuraTimelineDelta, StatTimelineDelta};
+use scribe_parser::events::{ScribeEvent, AuraTimelineDelta};
 use std::sync::{Arc, Mutex};
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -188,13 +188,11 @@ impl ScribeOutput {
                         }
                     }
                 }
-                ScribeEvent::StateChange { username, state, level, entity_id} => {
-                    if username.to_lowercase() == victim.to_lowercase() {
-                        self.log(&format!(
-                            "[State] {} (Lvl: {}, ID: {}) is now: {}", 
-                            username, level, entity_id, state
-                        ));
-                    }
+                ScribeEvent::StateChange { username, state, level, entity_id} if username.to_lowercase() == victim.to_lowercase() => {
+                    self.log(&format!(
+                        "[State] {} (Lvl: {}, ID: {}) is now: {}", 
+                        username, level, entity_id, state
+                    ));
                 }
                 _ => {}
             }

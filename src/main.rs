@@ -5,15 +5,33 @@ use scribe_output::ScribeOutput;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Settings {
+    port: u16,
+    device_name: Option<String>,
+}
+
 
 #[tokio::main]
 async fn main() {
     println!("Initializing Scribe");
 
+    let settings: Settings = config::Config::builder()
+        .add_source(config::File::with_name("config"))
+        .build()
+        .expect("Failed to load config.toml")
+        .try_deserialize()
+        .expect("Config format is invalid");
+
+    let _target_port = settings.port;
+    let _target_device = settings.device_name.filter(|s| !s.is_empty());
+
+        
     let identity_mapper = IdentityMapper::new();
     let (tx, mut rx) = mpsc::channel::<String>(10_000);
-    let target_device = None;
-    let target_port = 5588;
+
 
     
     let parser = Arc::new(ScribeParser::new(identity_mapper));
@@ -22,7 +40,7 @@ async fn main() {
     println!("Listening for game traffic. Enter a room to cache profiles...");
 
     let _sniffer_task = tokio::task::spawn_blocking(move || {
-        let mut sniffer = ScribeSniffer::new(target_device, target_port).expect("Failed to bind sniffer");
+        let mut sniffer = ScribeSniffer::new(_target_device.as_deref(), _target_port).expect("Failed to bind sniffer");
         
         loop {
             let json_objects = sniffer.next_json_objects();
