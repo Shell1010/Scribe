@@ -1,0 +1,19 @@
+[workspace]
+members = [
+    "crates/scribe_core",
+    "crates/scribe_sniffer",
+    "crates/scribe_parser",
+    "crates/scribe_output"
+]
+
+[package]
+name = "scribe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+scribe_core = { path = "crates/scribe_core" }
+scribe_sniffer = { path = "crates/scribe_sniffer" }
+scribe_parser = { path = "crates/scribe_parser" }
+scribe_output = { path = "crates/scribe_output" }
+tokio = { version = "1.0", features = ["full"] }

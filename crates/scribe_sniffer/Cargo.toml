@@ -1,0 +1,8 @@
+[package]
+name = "scribe_sniffer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+etherparse = "0.20.2"
+pcap = "2.4.0"
