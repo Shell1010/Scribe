@@ -23,6 +23,6 @@ By intercepting SmartFoxServer (SFS) traffic on TCP port 5588, Scribe decodes ra
 
 ```bash
 cargo build --release
-sudo setcap cap_net_raw,cap_net_admin=eip target/debug/scribe
+sudo setcap cap_net_raw,cap_net_admin=eip target/release/scribe
 ./target/release/scribe
 ```
