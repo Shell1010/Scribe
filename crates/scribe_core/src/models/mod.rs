@@ -1,6 +1,8 @@
 pub mod combat;
 pub mod identity;
 pub mod state;
+pub mod guild;
+
 
 use serde::{Deserialize, Serialize};
 
@@ -8,8 +10,16 @@ use serde::{Deserialize, Serialize};
 pub use combat::{MonsterStats, PlayerStats, AuraEvent, AuraDetails};
 pub use identity::{MoveToAreaPayload, PlayerBranch, MonsterDefinition};
 pub use state::StateDelta;
+pub use guild::UpdateGuildPayload;
+
 
 use crate::models::combat::StatUpdatePayload;
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitUserDatasPayload {
+    pub a: Vec<InitUserDataPayload>,
+}
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,6 +38,7 @@ pub struct UserDataDetails {
     
     #[serde(rename = "strClassName")]
     pub class_name: Option<String>,
+
 }
 
 
@@ -62,8 +73,11 @@ pub enum SfsContent {
     InitUserData(InitUserDataPayload),
 
     #[serde(rename = "initUserDatas")]
-    InitUserDatas(Vec<InitUserDataPayload>),
+    InitUserDatas(InitUserDatasPayload),
 
     #[serde(rename = "stu")]
     StatUpdate(StatUpdatePayload),
+
+    #[serde(rename = "updateGuild")]
+    UpdateGuild(UpdateGuildPayload),
 }

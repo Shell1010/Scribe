@@ -1,3 +1,4 @@
+use scribe_core::models::combat::StatDetails;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -56,7 +57,7 @@ pub enum ScribeEvent {
     },
 
     StatUpdate {
-        stats: HashMap<String, f64>
+        stats: StatDetails
     },
         
 }

@@ -77,7 +77,86 @@ pub struct AuraDetails {
     pub is_new: Option<bool>,
 }
 
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatUpdatePayload {
-    pub sta: HashMap<String, f64>,
+    pub sta: StatDetails,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct StatDetails {
+    #[serde(rename = "_STR")]
+    pub base_str: Option<f64>,
+    #[serde(rename = "_DEX")]
+    pub base_dex: Option<f64>,
+    #[serde(rename = "_INT")]
+    pub base_int: Option<f64>,
+    #[serde(rename = "_END")]
+    pub base_end: Option<f64>,
+    #[serde(rename = "_WIS")]
+    pub base_wis: Option<f64>,
+    #[serde(rename = "_LCK")]
+    pub base_lck: Option<f64>,
+
+    #[serde(rename = "$STR")]
+    pub total_str: Option<f64>,
+    #[serde(rename = "$DEX")]
+    pub total_dex: Option<f64>,
+    #[serde(rename = "$INT")]
+    pub total_int: Option<f64>,
+    #[serde(rename = "$END")]
+    pub total_end: Option<f64>,
+    #[serde(rename = "$WIS")]
+    pub total_wis: Option<f64>,
+    #[serde(rename = "$LCK")]
+    pub total_lck: Option<f64>,
+
+    #[serde(rename = "$ap")]
+    pub attack_power: Option<f64>,
+    #[serde(rename = "$sp")]
+    pub spell_power: Option<f64>,
+    #[serde(rename = "$thi")]
+    pub hit_chance: Option<f64>,
+    #[serde(rename = "$tcr")]
+    pub crit_rate: Option<f64>,
+    #[serde(rename = "$scm")]
+    pub crit_mod: Option<f64>,
+    #[serde(rename = "$tha")]
+    pub haste: Option<f64>,
+    #[serde(rename = "$dsh")]
+    pub dash: Option<f64>,
+
+    #[serde(rename = "$cao")]
+    pub damage_boost_all: Option<f64>,
+    #[serde(rename = "$cpo")]
+    pub physical_boost: Option<f64>,
+    #[serde(rename = "$cmo")]
+    pub magic_boost: Option<f64>,
+    #[serde(rename = "$cdo")]
+    pub dot_boost: Option<f64>,
+    #[serde(rename = "$cho")]
+    pub heal_boost: Option<f64>,
+
+
+    #[serde(rename = "$cai")]
+    pub damage_intake: Option<f64>,
+    #[serde(rename = "$cpi")]
+    pub physical_intake: Option<f64>,
+    #[serde(rename = "$cmi")]
+    pub magic_intake: Option<f64>,
+    #[serde(rename = "$cdi")]
+    pub dot_intake: Option<f64>,
+    #[serde(rename = "$chi")]
+    pub healing_intake: Option<f64>,
+
+    #[serde(rename = "$tdo")]
+    pub dodge_chance: Option<f64>,
+    #[serde(rename = "$cmc")]
+    pub mana_consumption: Option<f64>,
+    
+    #[serde(rename = "$shb")]
+    pub health_boost: Option<f64>,
+    #[serde(rename = "$smb")]
+    pub mana_boost: Option<f64>,
 }

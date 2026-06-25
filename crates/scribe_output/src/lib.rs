@@ -70,6 +70,65 @@ impl ScribeOutput {
 
     fn stream_live_update(&mut self, event: &ScribeEvent) {
         match event {
+            ScribeEvent::UserDataInitialized { username, uid, access_level, class_name } => {
+                self.log(&format!("  -> User data initialized: {} (UID: {}, Access Level: {}, Class: {})", username, uid, access_level, class_name));
+            }
+
+            ScribeEvent::BossAction { caster, target, message, action_type } => {
+                let msg_part = if message.is_empty() { String::new() } else { format!(" | msg: {}", message) };
+                    
+                self.log(&format!(
+                    "  -> [Boss] {} >> {} : ({}){}",
+                    caster, target, action_type, msg_part
+                ));
+            }
+
+            ScribeEvent::StatUpdate { stats } => {
+                let mut changed = Vec::new();
+            
+                // Helper to add only if it exists
+                let mut add = |name: &str, val: Option<f64>| {
+                    if let Some(v) = val { changed.push(format!("{}: {}", name, v)); }
+                };
+            
+                add("STR", stats.total_str);
+                add("INT", stats.total_int);
+                add("END", stats.total_end);
+                add("WIS", stats.total_wis);
+                add("DEX", stats.total_dex);
+                add("LUK", stats.total_lck);
+                
+                add("Attack Power", stats.attack_power);
+                add("Spell Power", stats.spell_power);
+                add("All Out", stats.damage_boost_all);
+                add("Physical Out", stats.physical_boost);
+                add("Magic Out", stats.magic_boost);
+                add("Dot Out", stats.dot_boost);
+                add("Heal Out", stats.heal_boost);
+                add("All In", stats.damage_intake);
+                add("Physical In", stats.physical_intake);
+                add("Magic In", stats.magic_intake);
+                add("Dot In", stats.dot_intake);
+                add("Heal In", stats.healing_intake);
+
+                
+                add("Mana Consumption", stats.mana_consumption);
+                add("Crit Chance", stats.crit_rate);
+                add("Dodge", stats.dodge_chance);
+                add("Haste", stats.haste);
+                add("Dash", stats.dash);
+                add("Health Boost", stats.health_boost);
+                add("Mana Boost", stats.mana_boost);
+                add("Hit Chance", stats.hit_chance);
+                add("Crit Mod", stats.crit_mod);
+                
+                
+            
+                if !changed.is_empty() {
+                    self.log(&format!("  -> [Stats] Updated: {}", changed.join(", ")));
+                }
+            }
+            
             ScribeEvent::Death { victim, killer } => {
                 self.print_death_recap(victim, killer);
             }
@@ -88,6 +147,8 @@ impl ScribeOutput {
                     username, level, entity_id, status
                 ));
             },
+
+            
 
             ScribeEvent::CombatTick { stats, auras } => {
                 for stat in stats {
@@ -148,7 +209,7 @@ impl ScribeOutput {
                     }
                 }
             }
-            _ => {}
+            
         }
     }
 

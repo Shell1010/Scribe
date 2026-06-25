@@ -1,10 +1,9 @@
 use scribe_sniffer::ScribeSniffer;
-use scribe_core::IdentityMapper;
-use scribe_parser::ScribeParser;
 use scribe_output::ScribeOutput;
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::sync::Mutex;
+use scribe_core::IdentityMapper;
+use scribe_parser::ScribeParser;
+use tokio::sync::{mpsc, Mutex};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -13,11 +12,9 @@ struct Settings {
     device_name: Option<String>,
 }
 
-
 #[tokio::main]
 async fn main() {
-    println!("Initializing Scribe");
-
+    // 1. Load Configuration
     let settings: Settings = config::Config::builder()
         .add_source(config::File::with_name("config"))
         .build()
@@ -25,12 +22,10 @@ async fn main() {
         .try_deserialize()
         .expect("Config format is invalid");
 
-    let _target_port = settings.port;
-    let _target_device = settings.device_name.filter(|s| !s.is_empty());
-
-        
+    let target_port = settings.port;
+    let target_device = settings.device_name.filter(|s| !s.is_empty());
     let identity_mapper = IdentityMapper::new();
-    let (tx, mut rx) = mpsc::channel::<String>(10_000);
+    let (tx, mut rx) = mpsc::channel::<String>(1000);
 
 
     
@@ -40,14 +35,13 @@ async fn main() {
     println!("Listening for game traffic. Enter a room to cache profiles...");
 
     let _sniffer_task = tokio::task::spawn_blocking(move || {
-        let mut sniffer = ScribeSniffer::new(_target_device.as_deref(), _target_port).expect("Failed to bind sniffer");
+        let mut sniffer = ScribeSniffer::new(target_device.as_deref(), target_port)
+            .expect("Failed to bind sniffer");
         
         loop {
-            let json_objects = sniffer.next_json_objects();
-            
-            for json_str in json_objects {
+            for json_str in sniffer.next_json_objects() {
+                // If the UI thread closes, we stop the sniffer
                 if tx.blocking_send(json_str).is_err() {
-                    println!("Receiver closed, shutting down sniffer.");
                     break; 
                 }
             }

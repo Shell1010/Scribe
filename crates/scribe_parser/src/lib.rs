@@ -1,8 +1,8 @@
 pub mod events;
 use scribe_core::IdentityMapper;
 use scribe_core::models::{SfsEnvelope, SfsContent};
-use events::{ScribeEvent, AuraTimelineDelta, StatTimelineDelta};
-
+use events::{AuraTimelineDelta, StatTimelineDelta};
+pub use events::ScribeEvent;
 pub struct ScribeParser {
     identity_mapper: IdentityMapper,
 }
@@ -20,7 +20,7 @@ impl ScribeParser {
             Ok(env) => env,
             Err(e) => {
                 if cfg!(debug_assertions) {
-                    eprintln!("Failed to parse packet: {}", e);
+                    eprintln!("Failed to parse packet: {}\n{}", e, raw_json);
                 }
                 return Vec::new();
             }
@@ -41,6 +41,14 @@ impl ScribeParser {
                 
 
                 output.push(ScribeEvent::ZoneChange { room: "Instance Loaded".to_string() });
+            }
+
+            SfsContent::UpdateGuild(payload) => {
+                for member in payload.guild.user_list.clone().into_iter() {
+                    self.identity_mapper.register_player(member.id, &member.username);
+                }
+                #[cfg(debug_assertions)]
+                println!("Harvested {} IDs from guild update.", payload.guild.user_list.len());
             }
             SfsContent::PlayerDeath(payload) => {
                 let victim_token = format!("p:{}", payload.user_id);
@@ -64,9 +72,9 @@ impl ScribeParser {
                 if let Some(ent_id) = payload.ent_id {
                     let other_event = ScribeEvent::StateChange {
                         username: payload.username.clone(),
-                        state: payload.state_data.int_state,
+                        state: payload.state_data.int_state.unwrap_or(1),
                         entity_id: ent_id,
-                        level: payload.level,
+                        level: payload.level.unwrap_or(100),
                     };
                     output.push(other_event);
                 }
@@ -87,10 +95,10 @@ impl ScribeParser {
             }
 
             SfsContent::InitUserDatas(payload) => {
-                for data in payload {
+                for data in payload.a {
                     self.identity_mapper.register_player(data.uid, &data.data.username);
                     self.identity_mapper.register_staff_level(data.uid, data.data.access_level);
-                
+
                     output.push(ScribeEvent::UserDataInitialized {
                         username: data.data.username,
                         uid: data.uid,
@@ -98,6 +106,7 @@ impl ScribeParser {
                         class_name: data.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
                     });
                 }
+            
             }
 
             SfsContent::Combat(payload) => {
@@ -148,16 +157,18 @@ impl ScribeParser {
                         other => other,
                     }.to_string();
             
-                    let target_name = self.identity_mapper.resolve_actor(&aura_event.target);
+                    
                     let caster_name = aura_event.caster
                         .map(|c| self.identity_mapper.resolve_actor(&c))
                         .unwrap_or_else(|| "System".to_string());
+
+     
             
                     if let Some(details) = aura_event.aura {
                         aura_deltas.push(AuraTimelineDelta {
                             action: action_type.clone(),
                             caster: caster_name.clone(),
-                            target: target_name.clone(),
+                            target: self.identity_mapper.resolve_actor(&aura_event.target),
                             aura_name: details.name,
                             value: details.val,
                             duration: details.duration,
@@ -171,7 +182,7 @@ impl ScribeParser {
                             aura_deltas.push(AuraTimelineDelta {
                                 action: action_type.clone(),
                                 caster: caster_name.clone(),
-                                target: target_name.clone(),
+                                target: self.identity_mapper.resolve_actor(&aura_event.target),
                                 aura_name: details.name,
                                 value: details.val,
                                 duration: details.duration,
