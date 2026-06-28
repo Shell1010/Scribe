@@ -2,3 +2,4 @@ output.txt
 scribe_cache.json
 *.tar.gz
 /target
+/test

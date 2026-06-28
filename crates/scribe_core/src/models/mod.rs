@@ -7,7 +7,7 @@ pub mod guild;
 use serde::{Deserialize, Serialize};
 
 
-pub use combat::{MonsterStats, PlayerStats, AuraEvent, AuraDetails};
+pub use combat::{MonsterStats, PlayerStats, AuraEvent, AuraDetails, AuraPlusPPayload, AddGoldExpPayload, SActPayload, UpdateClassPayload};
 pub use identity::{MoveToAreaPayload, PlayerBranch, MonsterDefinition};
 pub use state::StateDelta;
 pub use guild::UpdateGuildPayload;
@@ -56,6 +56,7 @@ pub struct SfsBody {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "cmd")]
+#[allow(clippy::large_enum_variant)]
 pub enum SfsContent {
     #[serde(rename = "ct")]
     Combat(combat::CombatPayload),
@@ -80,4 +81,19 @@ pub enum SfsContent {
 
     #[serde(rename = "updateGuild")]
     UpdateGuild(UpdateGuildPayload),
+
+    #[serde(rename = "addGoldExp")]
+    AddGoldExp(AddGoldExpPayload),
+    
+    #[serde(rename = "aura+p")]
+    AuraPlusP(AuraPlusPPayload),
+    
+    #[serde(rename = "sAct")]
+    SAct(SActPayload),
+
+    #[serde(rename = "seia")]
+    Seia(combat::SeiaPayload),
+    
+    #[serde(rename = "updateClass")]
+    UpdateClass(UpdateClassPayload),
 }

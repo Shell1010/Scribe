@@ -1,7 +1,0 @@
-[package]
-name = "scribe_output"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-scribe_parser = { path = "../scribe_parser" }

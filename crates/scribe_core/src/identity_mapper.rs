@@ -10,7 +10,7 @@ const CACHE_PATH: &str = "scribe_cache.json";
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct DiskCacheStructure {
     players: HashMap<u32, String>,
-    monsters: HashMap<u32, String>,
+    monsters: HashMap<String, HashMap<String, String>>,
     #[serde(default)] 
     access_levels: HashMap<u32, i32>, 
 }
@@ -19,9 +19,11 @@ struct DiskCacheStructure {
 pub struct IdentityMapper {
     cache_file: String,
     players: Arc<RwLock<HashMap<u32, String>>>,
-    monsters: Arc<RwLock<HashMap<u32, String>>>,
+    monsters: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
     access_levels: Arc<RwLock<HashMap<u32, i32>>>,
+    current_map: Arc<RwLock<String>>,
 }
+
 
 impl Default for IdentityMapper {
     fn default() -> Self {
@@ -50,8 +52,10 @@ impl IdentityMapper {
             players: Arc::new(RwLock::new(loaded_players)),
             monsters: Arc::new(RwLock::new(loaded_monsters)),
             access_levels: Arc::new(RwLock::new(loaded_access_levels)),
+            current_map: Arc::new(RwLock::new(String::new())),
         }
     }
+
 
     fn sync_to_disk(&self) {
         let p_lock = self.players.read().unwrap();
@@ -92,35 +96,42 @@ impl IdentityMapper {
         if modified { self.sync_to_disk(); }
     }
 
-    pub fn register_monster(&self, id: u32, name: &str) {
+    pub fn register_monster(&self, map_name: &str, id: String, name: &str) {
         let mut modified = false;
-        if let Ok(mut map) = self.monsters.write() && (map.insert(id, name.to_string()).is_none() || map.get(&id).map(|s| s != name).unwrap_or(false)) {
-            modified = true;
+        if let Ok(mut map) = self.monsters.write() {
+            let room_monsters = map.entry(map_name.to_string()).or_insert_with(HashMap::new);
+            if room_monsters.insert(id.clone(), name.to_string()).is_none() || room_monsters.get(&id).map(|s| s != name).unwrap_or(false) {
+                modified = true;
+            }
         }
         if modified { self.sync_to_disk(); }
     }
 
+    pub fn set_current_map(&self, map_name: &str) {
+        if let Ok(mut current) = self.current_map.write() {
+            *current = map_name.to_string();
+        }
+    }
+        
+        
     pub fn resolve_actor(&self, actor_token: &str) -> String {
-        if let Some(id_str) = actor_token.strip_prefix("m:") && let Ok(id) = id_str.parse::<u32>() && let Ok(map) = self.monsters.read() {
-            if let Some(name) = map.get(&id) {
+        if actor_token.starts_with("m:") {
+            if let Ok(current) = self.current_map.read() && let Ok(map) = self.monsters.read() && let Some(room_monsters) = map.get(&*current) && let Some(name) = room_monsters.get(actor_token) {
                 return name.clone();
             }
-            return format!("Unknown Monster ({})", id); 
-            
+            return format!("Unknown Monster ({})", actor_token);
         }
 
         if let Some(id_str) = actor_token.strip_prefix("p:") && let Ok(id) = id_str.parse::<u32>() {
             if let Ok(p_map) = self.players.read() && let Some(name) = p_map.get(&id) {
                 if let Ok(a_map) = self.access_levels.read() && let Some(&level) = a_map.get(&id) && level > 0 {
-                    return format!("[STAFF:{}] {}", level, name);
+                    return name.clone()
                 }
-                return name.clone();
+                return name.clone()
             }
             return format!("Unknown Player ({})", id);
         }
         
-
-
         actor_token.to_string()
     }
 }

@@ -1,16 +1,16 @@
 use scribe_core::models::combat::StatDetails;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde_json::{Map, Value};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuraTimelineDelta {
     pub action: String,
     pub caster: String,
     pub target: String,
-    pub aura_name: String, 
+    pub aura_name: String,
     pub value: Option<i32>,
     pub duration: Option<i32>,
-    pub aura_type: Option<String>, 
+    pub aura_type: Option<String>,
     pub is_new: Option<bool>,
 }
 
@@ -23,6 +23,7 @@ pub struct StatTimelineDelta {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum ScribeEvent {
     CombatTick {
         stats: Vec<StatTimelineDelta>,
@@ -41,7 +42,7 @@ pub enum ScribeEvent {
         entity_id: u32,
         level: i32,
     },
-    
+
     UserDataInitialized {
         username: String,
         uid: u32,
@@ -59,5 +60,34 @@ pub enum ScribeEvent {
     StatUpdate {
         stats: StatDetails
     },
-        
+
+    Unknown {
+        data: String
+    },
+
+    GoldExpGained {
+        monster_name: String,
+        gold: i32,
+        exp: i32,
+        bonus_gold: i32,
+    },
+
+    PassiveAurasApplied {
+        target: String,
+        auras: Vec<(String, StatDetails)>
+    },
+
+    SkillsLoaded { 
+        active: Vec<Map<String, Value>>, 
+        passive: Vec<Map<String, Value>> 
+    },
+
+    Seia {
+        data: Map<String, Value>
+    },
+    
+    ClassUpdated { class_name: String, category: String, desc: String, mrm: Vec<String> },
+
+    RoomPlayersUpdate { players: Vec<String> }
+
 }

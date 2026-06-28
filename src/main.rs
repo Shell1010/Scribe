@@ -1,10 +1,8 @@
+use serde::Deserialize;
 use scribe_sniffer::ScribeSniffer;
-use scribe_output::ScribeOutput;
-use std::sync::Arc;
 use scribe_core::IdentityMapper;
 use scribe_parser::ScribeParser;
-use tokio::sync::{mpsc, Mutex};
-use serde::Deserialize;
+use std::sync::mpsc;
 
 #[derive(Deserialize)]
 struct Settings {
@@ -12,56 +10,73 @@ struct Settings {
     device_name: Option<String>,
 }
 
-#[tokio::main]
-async fn main() {
-    // 1. Load Configuration
+fn main() {
     let settings: Settings = config::Config::builder()
         .add_source(config::File::with_name("config"))
-        .build()
-        .expect("Failed to load config.toml")
-        .try_deserialize()
-        .expect("Config format is invalid");
+        .build().unwrap().try_deserialize().unwrap();
+        
+    let port = settings.port;
+    let device = settings.device_name.filter(|s| !s.is_empty());
 
-    let target_port = settings.port;
-    let target_device = settings.device_name.filter(|s| !s.is_empty());
-    let identity_mapper = IdentityMapper::new();
-    let (tx, mut rx) = mpsc::channel::<String>(1000);
+    run_tui_mode(port, device);
+}
 
-
+fn run_tui_mode(port: u16, device: Option<String>) {
+    let (tx, rx) = mpsc::channel();
     
-    let parser = Arc::new(ScribeParser::new(identity_mapper));
+    std::thread::spawn(move || {
+        if let Ok(mut sniffer) = ScribeSniffer::new(device.as_deref(), port) {
+            loop {
+                for j in sniffer.next_json_objects() {
+                    if tx.send(j).is_err() { break; }
+                }
+            }
+        }
+    });
+
+    let mapper = IdentityMapper::new();
+
+    let mut parser = ScribeParser::new(mapper);
+    let app = tui::app::App::new(Some("output.txt"));
+    let mut terminal = tui::setup_terminal().unwrap();
+    
+    let _ = tui::run_app(&mut terminal, app, rx, &mut parser);
+    tui::restore_terminal(terminal).unwrap();
+}
+
+/*
+#[tokio::main]
+async fn run_cli_mode(port: u16, device: Option<String>) {
+    use scribe_output::ScribeOutput;
+    use tokio::sync::{mpsc as tmpsc, Mutex};
+    use std::sync::Arc;
+
+    let (tx, mut rx) = tmpsc::channel::<String>(1000);
+    let mapper = IdentityMapper::new();
+    mapper.load_from_disk();
+    let parser = Arc::new(ScribeParser::new(mapper));
     let output = Arc::new(Mutex::new(ScribeOutput::new("output.txt")));
 
-    println!("Listening for game traffic. Enter a room to cache profiles...");
-
-    let _sniffer_task = tokio::task::spawn_blocking(move || {
-        let mut sniffer = ScribeSniffer::new(target_device.as_deref(), target_port)
-            .expect("Failed to bind sniffer");
-        
-        loop {
-            for json_str in sniffer.next_json_objects() {
-                // If the UI thread closes, we stop the sniffer
-                if tx.blocking_send(json_str).is_err() {
-                    break; 
+    tokio::task::spawn_blocking(move || {
+        if let Ok(mut sniffer) = ScribeSniffer::new(device.as_deref(), port) {
+            loop {
+                for j in sniffer.next_json_objects() {
+                    if tx.blocking_send(j).is_err() { break; }
                 }
             }
         }
     });
 
     while let Some(raw_json) = rx.recv().await {
-        
-        let parser_clone = Arc::clone(&parser);
-        let output_clone = Arc::clone(&output);
-
+        let p = Arc::clone(&parser);
+        let o = Arc::clone(&output);
         tokio::spawn(async move {
-            let events = parser_clone.parse_packet(&raw_json);
+            let events = p.parse_packet(&raw_json);
             if !events.is_empty() {
-                let mut out = output_clone.lock().await;
-                
-                for event in events {
-                    out.handle_event(event);
-                }
+                let mut out = o.lock().await;
+                for e in events { out.handle_event(e); }
             }
         });
     }
 }
+*/

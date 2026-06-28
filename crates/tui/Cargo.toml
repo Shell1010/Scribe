@@ -7,3 +7,4 @@ edition = "2024"
 scribe_parser = { path = "../scribe_parser" }
 crossterm = "0.29.0"
 ratatui = "0.30.2"
+serde_json = "1.0.150"

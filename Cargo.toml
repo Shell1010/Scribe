@@ -3,7 +3,7 @@ members = [
     "crates/scribe_core",
     "crates/scribe_sniffer",
     "crates/scribe_parser",
-    "crates/scribe_output", "crates/tui",
+    "crates/tui",
 ]
 
 [package]
@@ -15,9 +15,7 @@ edition = "2024"
 scribe_core = { path = "crates/scribe_core" }
 scribe_sniffer = { path = "crates/scribe_sniffer" }
 scribe_parser = { path = "crates/scribe_parser" }
-scribe_output = { path = "crates/scribe_output" }
 tui = { path = "crates/tui" }
-tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
 config = "0.14"
 
