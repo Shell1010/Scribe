@@ -88,6 +88,22 @@ pub enum ScribeEvent {
     
     ClassUpdated { class_name: String, category: String, desc: String, mrm: Vec<String> },
 
-    RoomPlayersUpdate { players: Vec<String> }
+    RoomPlayersUpdate { players: Vec<String> },
 
+    ItemDropped {
+        item_id: u32,
+        item_name: String,
+        quantity: u32,
+    },
+
+    ItemAdded {
+        item_id: u32,
+        quantity: u32,
+        quantity_now: u32,
+    },
+
+    InventoryLoaded {
+        items: std::collections::HashMap<u32, String>,
+    },
+        
 }

@@ -3,6 +3,35 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddItemsPayload {
+    pub items: std::collections::HashMap<String, AddItemDetails>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddItemDetails {
+    #[serde(rename = "iQty")]
+    pub i_qty: u32,
+    #[serde(rename = "iQtyNow")]
+    pub i_qty_now: u32,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DropItemPayload {
+    pub items: std::collections::HashMap<String, DropItemDetails>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DropItemDetails {
+    #[serde(rename = "ItemID")]
+    pub item_id: u32,
+    #[serde(rename = "sName")]
+    pub s_name: String,
+    #[serde(rename = "iQty")]
+    pub i_qty: u32,
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddGoldExpPayload {

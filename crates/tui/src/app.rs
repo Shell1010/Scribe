@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::time::{Instant, Duration};
 use scribe_parser::events::{ScribeEvent, AuraTimelineDelta};
 use serde_json::{Map, Value};
 
@@ -35,6 +36,39 @@ pub struct ClassInfo {
 }
 
 
+#[derive(Debug, Clone)]
+pub struct DropMetric {
+    pub id: u32,
+    pub name: String,
+    pub total_quantity: u32,
+    pub drop_count: u32,
+    pub kills_at_last_drop: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct CombatMetrics {
+    pub session_start: Instant,
+    pub last_activity: Instant,
+    pub total_kills: u32,
+    pub total_gold: i32,
+    pub total_exp: i32,
+    pub drops: HashMap<String, DropMetric>,
+}
+
+impl Default for CombatMetrics {
+    fn default() -> Self {
+        Self {
+            session_start: Instant::now(),
+            last_activity: Instant::now(),
+            total_kills: 0,
+            total_gold: 0,
+            total_exp: 0,
+            drops: HashMap::new(),
+        }
+    }
+}
+
+
 
 pub struct App {
     pub active_tab: usize,
@@ -43,6 +77,7 @@ pub struct App {
     pub scroll_output_x: u16,
     pub scroll_class_x: u16,
     pub scroll_class_y: u16,
+    pub scroll_metrics_y: u16,
     
     pub snap: bool,
 
@@ -56,6 +91,8 @@ pub struct App {
 
     pub class_info: ClassInfo,
     pub selected_skill_index: usize,
+    pub combat_metrics: CombatMetrics,
+    pub item_cache: std::collections::HashMap<u32, String>,
         
 }
 
@@ -67,11 +104,12 @@ impl App {
 
         Self {
             active_tab: 0,
-            tabs: vec!["Output Log", "Entity Tracker (WIP)"],
+            tabs: vec!["Output Log", "Class Data", "Combat Metrics"],
             scroll_output_y: 0,
             scroll_output_x: 0,
             scroll_class_x: 0,
             scroll_class_y: 0,
+            scroll_metrics_y: 0,
             entities: HashMap::new(),
             system_log: VecDeque::with_capacity(1000),
             last_vitals: HashMap::new(),
@@ -82,13 +120,25 @@ impl App {
             snap: false,
             class_info: ClassInfo::default(),
             selected_skill_index: 0,
+            combat_metrics: CombatMetrics::default(),
+            item_cache: std::collections::HashMap::new(),
         }
     }
 
     pub fn snap_to_bottom(&mut self) {
         self.snap = true;
     }
-        
+
+
+    fn check_and_update_activity(&mut self) {
+        let now = Instant::now();
+        if now.duration_since(self.combat_metrics.last_activity) > Duration::from_secs(120) {
+            self.combat_metrics = CombatMetrics::default();
+            self.push_log("  -> [Metrics] Session reset due to 120s of inactivity.".to_string());
+        } else {
+            self.combat_metrics.last_activity = now;
+        }
+    }
 
     pub fn next_tab(&mut self) {
         self.active_tab = (self.active_tab + 1) % self.tabs.len();
@@ -127,6 +177,56 @@ impl App {
         self.recent_events.push_back(event.clone());
 
         match event {
+            ScribeEvent::InventoryLoaded { items } => {
+                self.item_cache.extend(items);
+                self.push_log(format!("  -> [System] Cached {} items from inventory", self.item_cache.len()));
+            }
+
+            ScribeEvent::ItemAdded { item_id, quantity, quantity_now } => {
+                self.check_and_update_activity();
+            
+                let current_kills = self.combat_metrics.total_kills;
+                
+                let item_name = self.combat_metrics.drops.values()
+                    .find(|d| d.id == item_id)
+                    .map(|d| d.name.clone())
+                    .unwrap_or_else(|| format!("Item #{}", item_id));
+                
+                let entry = self.combat_metrics.drops.entry(item_name.clone()).or_insert(DropMetric {
+                    id: item_id,
+                    name: item_name.clone(),
+                    total_quantity: 0,
+                    drop_count: 0,
+                    kills_at_last_drop: current_kills,
+                });
+                
+                entry.total_quantity += quantity;
+                entry.drop_count += 1;
+                entry.kills_at_last_drop = current_kills;
+                
+                self.push_log(format!(
+                    "  -> [Bag] Added {}x {} (Total in Bag: {})", 
+                    quantity, item_name, quantity_now
+                ));
+            }
+        
+            ScribeEvent::ItemDropped { item_id, item_name, quantity } => {
+                let current_kills = self.combat_metrics.total_kills;          
+                let entry = self.combat_metrics.drops.entry(item_name.clone()).or_insert(DropMetric {
+                    id: item_id,
+                    name: item_name.clone(),
+                    total_quantity: 0,
+                    drop_count: 0,
+                    kills_at_last_drop: current_kills,
+                });
+                
+                entry.total_quantity += quantity;
+                entry.drop_count += 1;
+                entry.kills_at_last_drop = current_kills; // reset tracker
+                self.push_log(format!("  -> [Drop] {}x {} (ID: {})", quantity, item_name, item_id));
+                self.check_and_update_activity();
+            }
+
             ScribeEvent::RoomPlayersUpdate { players } => {
                 self.users_in_room = players;
             }
@@ -134,6 +234,10 @@ impl App {
             ScribeEvent::GoldExpGained { monster_name, gold, exp, bonus_gold } => {
                 let bonus = if bonus_gold > 0 { format!(" (+{} bonus)", bonus_gold) } else { "".to_string() };
                 self.push_log(format!("  -> [Loot] Killed {}: {} Gold{} | {} Exp", monster_name, gold, bonus, exp));
+                self.combat_metrics.total_kills += 1;
+                self.combat_metrics.total_gold += gold + bonus_gold;
+                self.combat_metrics.total_exp += exp;
+                self.check_and_update_activity();
             }
 
             ScribeEvent::PassiveAurasApplied { target, auras } => {
@@ -176,6 +280,8 @@ impl App {
                 self.class_info.desc = desc.clone();
                 self.class_info.mrm = mrm.clone();
                 self.selected_skill_index = 0;
+                self.class_info.active_skills = Vec::new();
+                self.class_info.passive_skills = Vec::new();
                 
                 self.push_log(format!("\n=== Class Switched: {} ({}) ===", class_name, category));
             }
@@ -205,9 +311,9 @@ impl App {
                             
             }
                         
-            ScribeEvent::UserDataInitialized { username, uid, access_level, class_name } => {
+            ScribeEvent::UserDataInitialized { username, uid, class_name, access_level: _ } => {
                 let class_str = class_name;
-                self.push_log(format!("  -> User data initialized: {} (UID: {}, Access Level: {}, Class: {})", username, uid, access_level, class_str));
+                self.push_log(format!("  -> User data initialized: {} (UID: {}, Class: {})", username, uid, class_str));
             }
 
             ScribeEvent::BossAction { caster, target, message, action_type } => {

@@ -15,7 +15,7 @@ pub struct ScribeSniffer {
 }
 
 impl ScribeSniffer {
-    pub fn new(device_name: Option<&str>, port: u16) -> Result<Self, pcap::Error> {
+    pub fn new(device_name: Option<&str>, port: Vec<u16>) -> Result<Self, pcap::Error> {
         let device = match device_name {
             Some(name) => Device::list()?.into_iter().find(|d| d.name == name),
             None => Device::lookup()?,
@@ -26,8 +26,12 @@ impl ScribeSniffer {
             .snaplen(65535)
             .immediate_mode(true)
             .open()?;
-
-        let filter_str = format!("tcp port {}", port);
+        
+        let filter_str = port
+            .iter()
+            .map(|p| format!("tcp port {}", p))
+            .collect::<Vec<String>>()
+            .join(" or ");
         capture.filter(&filter_str, true)?;
 
         Ok(Self {

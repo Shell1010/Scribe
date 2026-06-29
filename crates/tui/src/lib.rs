@@ -8,7 +8,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap, Row, Table},
     Terminal, Frame,
 };
 use std::{io, time::Duration};
@@ -16,7 +16,7 @@ use std::sync::mpsc::Receiver;
 use scribe_parser::ScribeParser; 
 
 
-use crate::app::{App}; 
+use crate::app::{App, DropMetric}; 
 pub mod app;
 
 pub fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -146,6 +146,83 @@ fn ui(f: &mut Frame, app: &mut App) {
                 .block(Block::default().title(" Verbose Data ").borders(Borders::ALL));
             f.render_widget(detail_panel, body_chunks[1]);
         }
+        2 => {
+            let metrics_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(8), Constraint::Min(0)])
+                .split(chunks[1]);
+
+            // 1. Session Summary Header
+            let elapsed = app.combat_metrics.session_start.elapsed().as_secs_f64() / 60.0;
+            let mins = elapsed.max(1.0);
+
+            let kills = app.combat_metrics.total_kills;
+            let gold = app.combat_metrics.total_gold;
+            let exp = app.combat_metrics.total_exp;
+
+            let header_text = format!(
+                "Session Time: {:.1} Minutes\n\nTotal Kills: {} ({:.1} KPM)\nTotal Gold: {} ({:.0} GPM)\nTotal Exp: {} ({:.0} XPM)",
+                elapsed,
+                kills, kills as f64 / mins,
+                gold, gold as f64 / mins,
+                exp, exp as f64 / mins
+            );
+
+            let header = Paragraph::new(header_text)
+                .block(Block::default().title(" Global Session Stats ").borders(Borders::ALL));
+            f.render_widget(header, metrics_chunks[0]);
+
+            let mut drops: Vec<&DropMetric> = app.combat_metrics.drops.values().collect();
+            drops.sort_by(|a, b| b.drop_count.cmp(&a.drop_count));
+
+            let header_row = Row::new(vec!["Item Name", "Total Qty", "Drop Rate", "1 in X Kills", "Since Last", "Next Est."])
+                .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                .bottom_margin(1);
+
+            let current_kills = app.combat_metrics.total_kills;
+
+            let rows: Vec<Row> = drops.iter().map(|d| {
+                let empirical_rate = d.drop_count as f64 / current_kills.max(1) as f64;
+                let one_in_x = (1.0 / empirical_rate).round() as i32;
+                let kills_since_last = current_kills.saturating_sub(d.kills_at_last_drop);
+                
+                let next_est = one_in_x - kills_since_last as i32;
+                let next_str = if next_est <= 0 {
+                    format!("Overdue ({})", next_est.abs())
+                } else {
+                    format!("in {}", next_est)
+                };
+
+                let rate_str = format!("{:.2}%", empirical_rate * 100.0);
+                
+                Row::new(vec![
+                    d.name.clone(),
+                    d.total_quantity.to_string(),
+                    rate_str,
+                    one_in_x.to_string(),
+                    kills_since_last.to_string(),
+                    next_str,
+                ]).style(Style::default().fg(if next_est <= 0 { Color::Green } else { Color::White }))
+            }).collect();
+
+            let max_scroll = rows.len().saturating_sub(metrics_chunks[1].height.saturating_sub(3) as usize) as u16;
+            app.scroll_metrics_y = app.scroll_metrics_y.min(max_scroll);
+
+            let table = Table::new(rows, [
+                Constraint::Percentage(30), // Name
+                Constraint::Percentage(10), // Qty
+                Constraint::Percentage(15), // Rate
+                Constraint::Percentage(15), // 1 in X
+                Constraint::Percentage(15), // Since Last
+                Constraint::Percentage(15), // Next Est
+            ])
+            .header(header_row)
+            .block(Block::default().title(" Drop Logistics (Up/Down) ").borders(Borders::ALL));
+
+            let mut table_state = ratatui::widgets::TableState::default();
+            table_state.select(Some(app.scroll_metrics_y as usize));
+            f.render_stateful_widget(table, metrics_chunks[1], &mut table_state);
+        }
         _ => {}
     }
 
@@ -170,42 +247,44 @@ pub fn run_app(
     while !app.should_quit {
         terminal.draw(|f| ui(f, &mut app))?;
 
-        if event::poll(Duration::from_millis(16))? && let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => app.should_quit = true,
-            
-                KeyCode::Enter => {
-                    app.active_tab = (app.active_tab + 1) % app.tabs.len();
-                    app.snap = true;
-                }
+        if event::poll(Duration::from_millis(16))? {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => app.should_quit = true,
+                
+                    KeyCode::Enter => {
+                        app.active_tab = (app.active_tab + 1) % app.tabs.len();
+                        app.snap = true;
+                    }
 
-                KeyCode::Up => {
-                    if app.active_tab == 0 {
-                        app.scroll_output_y = app.scroll_output_y.saturating_sub(1);
-                        app.snap = false;
-                    } else if app.active_tab == 1 {
-                        app.selected_skill_index = app.selected_skill_index.saturating_sub(1);
+                    // Map keys dynamically based on active tab
+                    KeyCode::Up => {
+                        match app.active_tab {
+                            0 => { app.scroll_output_y = app.scroll_output_y.saturating_sub(1); app.snap = false; },
+                            1 => { app.selected_skill_index = app.selected_skill_index.saturating_sub(1); },
+                            2 => { app.scroll_metrics_y = app.scroll_metrics_y.saturating_sub(1); },
+                            _ => {}
+                        }
                     }
-                }
-                KeyCode::Down => {
-                    if app.active_tab == 0 {
-                        app.scroll_output_y = app.scroll_output_y.saturating_add(1);
-                        app.snap = false;
-                    } else if app.active_tab == 1 {
-                        app.selected_skill_index = app.selected_skill_index.saturating_add(1);
+                    KeyCode::Down => {
+                        match app.active_tab {
+                            0 => { app.scroll_output_y = app.scroll_output_y.saturating_add(1); app.snap = false; },
+                            1 => { app.selected_skill_index = app.selected_skill_index.saturating_add(1); },
+                            2 => { app.scroll_metrics_y = app.scroll_metrics_y.saturating_add(1); },
+                            _ => {}
+                        }
                     }
+                    KeyCode::Left => {
+                        if app.active_tab == 0 { app.scroll_output_x = app.scroll_output_x.saturating_sub(2); }
+                        if app.active_tab == 1 { app.scroll_class_x = app.scroll_class_x.saturating_sub(2); }
+                    }
+                    KeyCode::Right => {
+                        if app.active_tab == 0 { app.scroll_output_x = app.scroll_output_x.saturating_add(2); }
+                        if app.active_tab == 1 { app.scroll_class_x = app.scroll_class_x.saturating_add(2); }
+                    }
+                    _ => {}
                 }
-                KeyCode::Left => {
-                    if app.active_tab == 0 { app.scroll_output_x = app.scroll_output_x.saturating_sub(2); }
-                    if app.active_tab == 1 { app.scroll_class_x = app.scroll_class_x.saturating_sub(2); }
-                }
-                KeyCode::Right => {
-                    if app.active_tab == 0 { app.scroll_output_x = app.scroll_output_x.saturating_add(2); }
-                    if app.active_tab == 1 { app.scroll_class_x = app.scroll_class_x.saturating_add(2); }
-                }
-                _ => {}
             }
-            
         }
 
         while let Ok(raw_json) = rx.try_recv() {

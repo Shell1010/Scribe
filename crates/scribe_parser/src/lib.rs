@@ -28,6 +28,37 @@ impl ScribeParser {
         };
 
         match envelope.b.o {
+
+            SfsContent::LoadInventoryBig(payload) => {
+                let mut items_map = std::collections::HashMap::new();
+                for item in payload.items {
+                    items_map.insert(item.item_id, item.s_name);
+                }
+                output.push(ScribeEvent::InventoryLoaded { items: items_map });
+            }
+
+            SfsContent::AddItems(payload) => {
+                for (id_str, details) in payload.items {
+                    if let Ok(item_id) = id_str.parse::<u32>() {
+                        output.push(ScribeEvent::ItemAdded {
+                            item_id,
+                            quantity: details.i_qty,
+                            quantity_now: details.i_qty_now,
+                        });
+                    }
+                }
+            }
+            
+            SfsContent::DropItem(payload) => {
+                for (_, item) in payload.items {
+                    output.push(ScribeEvent::ItemDropped {
+                        item_id: item.item_id,
+                        item_name: item.s_name,
+                        quantity: item.i_qty,
+                    });
+                }
+            }
+                
             SfsContent::Seia(payload) => {
                 output.push(ScribeEvent::Seia {
                     data: payload.o

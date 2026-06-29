@@ -6,7 +6,7 @@ use std::sync::mpsc;
 
 #[derive(Deserialize)]
 struct Settings {
-    port: u16,
+    port: Vec<u16>,
     device_name: Option<String>,
 }
 
@@ -21,7 +21,7 @@ fn main() {
     run_tui_mode(port, device);
 }
 
-fn run_tui_mode(port: u16, device: Option<String>) {
+fn run_tui_mode(port: Vec<u16>, device: Option<String>) {
     let (tx, rx) = mpsc::channel();
     
     std::thread::spawn(move || {

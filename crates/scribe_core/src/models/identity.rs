@@ -50,3 +50,16 @@ pub struct MonsterBranch {
     #[serde(rename = "iLvl")]
     pub level: Option<i32>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoadInventoryBigPayload {
+    pub items: Vec<InventoryItemDetails>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InventoryItemDetails {
+    #[serde(rename = "ItemID")]
+    pub item_id: u32,
+    #[serde(rename = "sName")]
+    pub s_name: String,
+}
