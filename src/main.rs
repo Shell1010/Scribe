@@ -37,7 +37,7 @@ fn run_tui_mode(port: Vec<u16>, device: Option<String>) {
     let mapper = IdentityMapper::new();
 
     let mut parser = ScribeParser::new(mapper);
-    let app = tui::app::App::new(Some("output.txt"));
+    let app = tui::app::App::new(Some("output.log"));
     let mut terminal = tui::setup_terminal().unwrap();
     
     let _ = tui::run_app(&mut terminal, app, rx, &mut parser);

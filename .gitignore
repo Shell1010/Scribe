@@ -1,5 +1,10 @@
-output.txt
+output.log
 scribe_cache.json
 *.tar.gz
 /target
 /test
+build.sh
+/build_output
+Cross.toml
+Cargo.lock
+/npcap-sdk-1.16
