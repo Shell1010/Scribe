@@ -14,6 +14,17 @@ Scribe is a Rust-based network packet sniffer for AdventureQuest Worlds (AQW). U
 * `libpcap` development headers (Linux/macOS) or Npcap (Windows).
 
 ## Getting Started
+1. Download the latest release from the [Releases](https://github.com/Shell1010/Scribe/releases) page.
+2. Create a `config.toml` in the same folder, with the following configuration
+
+```toml
+port = [5594, 5588] # 5594/5588
+device_name = ""
+```
+3. Run the executable, yell at me if it doesn't work.
+
+
+## Building from Source
 1. Clone the repository.
 2. Ensure you have the necessary pcap dependencies installed for your operating system.
 

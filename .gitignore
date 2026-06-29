@@ -8,3 +8,4 @@ build.sh
 Cross.toml
 Cargo.lock
 /npcap-sdk-1.16
+/.cargo
