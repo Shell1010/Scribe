@@ -149,6 +149,10 @@ pub struct CombatPayload {
     pub a: Vec<AuraEvent>,
     #[serde(default)]
     pub anims: Vec<AnimPayload>,
+    #[serde(default)]
+    pub sarsa: Vec<SarsaEvent>,
+    #[serde(default)]
+    pub sara: Vec<SaraEvent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -338,4 +342,54 @@ impl StatDetails {
     
         changed
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SarsaEvent {
+    #[serde(rename = "cInf")]
+    pub c_inf: String,
+    pub a: Vec<SarsaAction>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SarsaAction {
+    #[serde(rename = "type")]
+    pub action_type: Option<String>,
+    pub hp: i32,
+    #[serde(rename = "tInf")]
+    pub t_inf: String,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaraEvent {
+    #[serde(rename = "actionResult")]
+    pub action_result: SaraActionResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaraActionResult {
+    #[serde(rename = "type")]
+    pub action_type: Option<String>,
+    pub hp: i32,
+    #[serde(rename = "cInf")]
+    pub c_inf: String,
+    #[serde(rename = "tInf")]
+    pub t_inf: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MtlsPayload {
+    pub id: i32,
+    pub o: MtlsStats,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MtlsStats {
+    #[serde(rename = "intState")]
+    pub int_state: Option<i32>,
+    #[serde(rename = "intHP")]
+    pub int_hp: i32,
+    #[serde(rename = "intMP")]
+    pub int_mp: Option<i32>,
 }

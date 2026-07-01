@@ -26,6 +26,14 @@ impl EntityState {
 }
 
 #[derive(Debug, Clone, Default)]
+pub struct MonsterCombatState {
+    pub base_hp: i32,
+    pub damage_dealt: i32,
+    pub total_damage_dealt: i32,
+}
+
+
+#[derive(Debug, Clone, Default)]
 pub struct ClassInfo {
     pub name: String,
     pub category: String,
@@ -80,6 +88,7 @@ pub struct App {
     pub scroll_metrics_y: u16,
     
     pub snap: bool,
+    pub active_monsters: HashMap<String, MonsterCombatState>,
 
     pub entities: HashMap<String, EntityState>,
     pub system_log: VecDeque<String>,
@@ -118,6 +127,7 @@ impl App {
             should_quit: false,
             users_in_room: Vec::new(),
             snap: false,
+            active_monsters: HashMap::new(),
             class_info: ClassInfo::default(),
             selected_skill_index: 0,
             combat_metrics: CombatMetrics::default(),
@@ -177,6 +187,37 @@ impl App {
         self.recent_events.push_back(event.clone());
 
         match event {
+            ScribeEvent::DamageDealt { caster: _, target, damage } => {
+                let state = self.active_monsters.entry(target.clone()).or_default();
+                state.damage_dealt += damage;
+                self.push_log(format!("  -> [Combat] Target: {} | Your Dmg: {}", target, damage));
+            }
+
+            ScribeEvent::MonsterReset { target, base_hp } => {
+                if let Some(state) = self.active_monsters.get(&target) {
+                    let contribution = if state.total_damage_dealt > 0 {
+                        (state.damage_dealt as f64 / state.total_damage_dealt as f64) * 100.0
+                        
+                    } else { 0.0 };
+
+                    let mon_hp_contribution = if base_hp > 0 {
+                        (state.damage_dealt as f64 / base_hp as f64) * 100.0
+                    } else { 0.0 };
+
+                    self.push_log(format!(
+                        "  -> [Combat] Target: {} | Base HP: {} | Your Dmg: {} | Pct: {:.1}% | HP Pct: {:.1}%", 
+                        target, state.base_hp, state.damage_dealt, contribution, mon_hp_contribution
+                    ));
+                }
+
+                
+                self.active_monsters.insert(target.clone(), MonsterCombatState {
+                    base_hp,
+                    damage_dealt: 0,
+                    total_damage_dealt: 0,
+                });
+            }
+                        
             ScribeEvent::InventoryLoaded { items } => {
                 self.item_cache.extend(items);
                 self.push_log(format!("  -> [System] Cached {} items from inventory", self.item_cache.len()));
@@ -274,14 +315,16 @@ impl App {
                 }
             }
 
-            ScribeEvent::ClassUpdated { class_name, category, desc, mrm } => {
-                self.class_info.name = class_name.clone();
-                self.class_info.category = category.clone();
-                self.class_info.desc = desc.clone();
-                self.class_info.mrm = mrm.clone();
-                self.selected_skill_index = 0;
-                self.class_info.active_skills = Vec::new();
-                self.class_info.passive_skills = Vec::new();
+            ScribeEvent::ClassUpdated { uid: _, class_name, category, desc, mrm } => {
+                if !desc.is_empty() {
+                    self.class_info.name = class_name.clone();
+                    self.class_info.category = category.clone();
+                    self.class_info.desc = desc.clone();
+                    self.class_info.mrm = mrm.clone();
+                    self.selected_skill_index = 0;
+                    self.class_info.active_skills = Vec::new();
+                    self.class_info.passive_skills = Vec::new();
+                }
                 
                 self.push_log(format!("\n=== Class Switched: {} ({}) ===", class_name, category));
             }
@@ -393,6 +436,9 @@ impl App {
                         let diff = new_hp - prev_hp;
                         if diff != 0 {
                             let label = if diff > 0 { "Heal" } else { "Dmg" };
+                            if let Some(state) = self.active_monsters.get_mut(&stat.target) {
+                                state.total_damage_dealt += diff;
+                            }
                             updates.push(format!("{}: {} ({})", label, diff.abs(), new_hp));
                         }
                     }
@@ -407,6 +453,9 @@ impl App {
                         let diff = new_sh - prev_sh;
                         if diff != 0 {
                             let label = if diff > 0 { "SG Gain" } else { "SG Loss" };
+                            if let Some(state) = self.active_monsters.get_mut(&stat.target) {
+                                state.total_damage_dealt += diff;
+                            }
                             updates.push(format!("{}: {} ({})", label, diff.abs(), new_sh));
                         }
                     }
@@ -415,7 +464,7 @@ impl App {
                         stat.target.clone(), 
                         (stat.hp.unwrap_or(prev_hp), stat.mp.unwrap_or(prev_mp), stat.shield.unwrap_or(prev_sh))
                     );
-                            
+
                     if !updates.is_empty() {
                         self.push_log(format!("  -> [Vitals] {} -> {}", stat.target, updates.join(" | ")));
                     }

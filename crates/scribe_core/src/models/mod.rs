@@ -7,7 +7,11 @@ pub mod guild;
 use serde::{Deserialize, Serialize};
 
 
-pub use combat::{MonsterStats, PlayerStats, AuraEvent, AuraDetails, AuraPlusPPayload, AddGoldExpPayload, SActPayload, UpdateClassPayload, DropItemPayload, AddItemsPayload};
+pub use combat::{MonsterStats, PlayerStats, AuraEvent,
+    AuraDetails, AuraPlusPPayload, AddGoldExpPayload, 
+    SActPayload, UpdateClassPayload, DropItemPayload,
+    AddItemsPayload, SarsaEvent, MtlsPayload, 
+    SaraEvent};
 pub use identity::{MoveToAreaPayload, PlayerBranch, MonsterDefinition, LoadInventoryBigPayload};
 pub use state::StateDelta;
 pub use guild::UpdateGuildPayload;
@@ -105,4 +109,7 @@ pub enum SfsContent {
 
     #[serde(rename = "addItems")]
     AddItems(AddItemsPayload),
+
+    #[serde(rename = "mtls")]
+    Mtls(MtlsPayload),
 }

@@ -29,6 +29,16 @@ pub enum ScribeEvent {
         stats: Vec<StatTimelineDelta>,
         auras: Vec<AuraTimelineDelta>,
     },
+    DamageDealt {
+        caster: String,
+        target: String,
+        damage: i32,
+    },
+    MonsterReset {
+        target: String,
+        base_hp: i32,
+    },
+        
     Death {
         victim: String,
         killer: String,
@@ -86,7 +96,7 @@ pub enum ScribeEvent {
         data: Map<String, Value>
     },
     
-    ClassUpdated { class_name: String, category: String, desc: String, mrm: Vec<String> },
+    ClassUpdated { uid: u32, class_name: String, category: String, desc: String, mrm: Vec<String> },
 
     RoomPlayersUpdate { players: Vec<String> },
 

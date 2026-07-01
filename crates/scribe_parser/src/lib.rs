@@ -29,6 +29,16 @@ impl ScribeParser {
 
         match envelope.b.o {
 
+            SfsContent::Mtls(payload) => {
+                let target_token = format!("m:{}", payload.id);
+                let target_name = self.identity_mapper.resolve_actor(&target_token);
+                
+                output.push(ScribeEvent::MonsterReset {
+                    target: target_name,
+                    base_hp: payload.o.int_hp,
+                });
+            }
+
             SfsContent::LoadInventoryBig(payload) => {
                 let mut items_map = std::collections::HashMap::new();
                 for item in payload.items {
@@ -79,6 +89,7 @@ impl ScribeParser {
                 };
                 
                 output.push(ScribeEvent::ClassUpdated {
+                    uid: payload.uid,
                     class_name: payload.class_name,
                     category: category.to_string(),
                     desc: payload.desc,
@@ -210,6 +221,37 @@ impl ScribeParser {
                             mp: None,
                             shield: data.shield,
                         });
+                    }
+                }
+
+                for sarsa in payload.sarsa {
+                    let caster = self.identity_mapper.resolve_actor(&sarsa.c_inf);
+                    for action in sarsa.a {
+                        if let Some(act_type) = &action.action_type {
+                            if act_type == "hit" && action.hp > 0 {
+                                let target = self.identity_mapper.resolve_actor(&action.t_inf);
+                                output.push(ScribeEvent::DamageDealt {
+                                    caster: caster.clone(),
+                                    target,
+                                    damage: action.hp,
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                for sara in payload.sara {
+                    let action = sara.action_result;
+                    if let Some(act_type) = &action.action_type {
+                        if act_type == "hit" && action.hp > 0 {
+                            let caster = self.identity_mapper.resolve_actor(&action.c_inf);
+                            let target = self.identity_mapper.resolve_actor(&action.t_inf);
+                            output.push(ScribeEvent::DamageDealt {
+                                caster,
+                                target,
+                                damage: action.hp,
+                            });
+                        }
                     }
                 }
 

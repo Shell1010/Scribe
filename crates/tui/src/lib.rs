@@ -288,10 +288,11 @@ pub fn run_app(
         }
 
         while let Ok(raw_json) = rx.try_recv() {
-            let events = parser.parse_packet(&raw_json);
-            for event in events {
-                app.handle_event(event);
+            let mut events = parser.parse_packet(&raw_json);
+            for event in &events {
+                app.handle_event(event.clone());
             }
+            events.clear();
         }
     }
     Ok(())
