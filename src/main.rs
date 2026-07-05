@@ -25,11 +25,15 @@ fn run_tui_mode(port: Vec<u16>, device: Option<String>) {
     let (tx, rx) = mpsc::channel();
     
     std::thread::spawn(move || {
-        if let Ok(mut sniffer) = ScribeSniffer::new(device.as_deref(), port) {
-            loop {
+        match ScribeSniffer::new(device.as_deref(), port) {
+            Ok(mut sniffer) => loop {
                 for j in sniffer.next_json_objects() {
                     if tx.send(j).is_err() { break; }
                 }
+            },
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
             }
         }
     });

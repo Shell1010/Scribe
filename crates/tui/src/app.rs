@@ -228,10 +228,7 @@ impl App {
             
                 let current_kills = self.combat_metrics.total_kills;
                 
-                let item_name = self.combat_metrics.drops.values()
-                    .find(|d| d.id == item_id)
-                    .map(|d| d.name.clone())
-                    .unwrap_or_else(|| format!("Item #{}", item_id));
+                let item_name = self.item_cache.get(&item_id).cloned().unwrap_or_else(|| format!("Item #{}", item_id));
                 
                 let entry = self.combat_metrics.drops.entry(item_name.clone()).or_insert(DropMetric {
                     id: item_id,
@@ -253,6 +250,9 @@ impl App {
         
             ScribeEvent::ItemDropped { item_id, item_name, quantity } => {
                 let current_kills = self.combat_metrics.total_kills;          
+
+                self.item_cache.insert(item_id, item_name.clone());
+
                 let entry = self.combat_metrics.drops.entry(item_name.clone()).or_insert(DropMetric {
                     id: item_id,
                     name: item_name.clone(),
@@ -263,7 +263,8 @@ impl App {
                 
                 entry.total_quantity += quantity;
                 entry.drop_count += 1;
-                entry.kills_at_last_drop = current_kills; // reset tracker
+                entry.kills_at_last_drop = current_kills;
+                
                 self.push_log(format!("  -> [Drop] {}x {} (ID: {})", quantity, item_name, item_id));
                 self.check_and_update_activity();
             }
@@ -342,7 +343,11 @@ impl App {
                     self.class_info.passive_skills = passive;
                 } else {
                     for (i, skill) in passive.iter().enumerate() {
-                        self.class_info.passive_skills[i].extend(skill.clone());
+                        if let Some(existing_skill) = self.class_info.passive_skills.get_mut(i) {
+                            existing_skill.extend(skill.clone());
+                        } else {
+                            self.class_info.passive_skills.push(skill.clone());
+                        }
                     }
                 }
                 self.selected_skill_index = 0;
