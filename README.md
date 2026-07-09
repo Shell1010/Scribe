@@ -9,6 +9,7 @@ Scribe is a Rust-based network packet sniffer for AdventureQuest Worlds (AQW). U
 - Stat Updates.
 - Damage tracking.
 - Logs outputs to an `output.log` file to view combat breakdown.
+- Ultra Indicators
 
 ## Prerequisites
 * `libpcap` development headers (Linux/macOS) or Npcap (Windows).
