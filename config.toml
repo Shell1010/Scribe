@@ -1,2 +1,3 @@
-port = [5594, 5588] # 5594/5588
+port = [5594, 5588, 5590] # 5594/5588
 device_name = ""
+username = "archfishy"

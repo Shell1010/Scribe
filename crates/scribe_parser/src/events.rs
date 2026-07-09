@@ -29,16 +29,13 @@ pub enum ScribeEvent {
         stats: Vec<StatTimelineDelta>,
         auras: Vec<AuraTimelineDelta>,
     },
-    DamageDealt {
-        caster: String,
-        target: String,
-        damage: i32,
-    },
+    EnemyDamage { caster: String, target: String, damage: i32 },
+    PlayerDamage { caster: String, target: String, damage: i32 },
     MonsterReset {
         target: String,
         base_hp: i32,
     },
-        
+
     Death {
         victim: String,
         killer: String,
@@ -87,15 +84,15 @@ pub enum ScribeEvent {
         auras: Vec<(String, StatDetails)>
     },
 
-    SkillsLoaded { 
-        active: Vec<Map<String, Value>>, 
-        passive: Vec<Map<String, Value>> 
+    SkillsLoaded {
+        active: Vec<Map<String, Value>>,
+        passive: Vec<Map<String, Value>>
     },
 
     Seia {
         data: Map<String, Value>
     },
-    
+
     ClassUpdated { uid: u32, class_name: String, category: String, desc: String, mrm: Vec<String> },
 
     RoomPlayersUpdate { players: Vec<String> },
@@ -115,5 +112,5 @@ pub enum ScribeEvent {
     InventoryLoaded {
         items: std::collections::HashMap<u32, String>,
     },
-        
+
 }

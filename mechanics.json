@@ -1,0 +1,306 @@
+{
+    "championdrakath": [
+        {
+            "name": "Cdrak Solo Taunt",
+            "roles": ["LOO", "LR", "PCM", "DPS"],
+            "reactives": [
+                {
+                    "trigger": { "HP": { "value": 18000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 16000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 14000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 12000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 8000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 6000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 4000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                }
+            ]
+        },
+        {
+            "name": "Cdrak 16 and 12 LR",
+            "roles": ["PCM", "LR", "LOO", "DPS"],
+            "reactives": [
+                {
+                    "trigger": { "HP": { "value": 18000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 16000000, "timer": 3000 } },
+                    "role": "LR",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 14000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 12000000, "timer": 3000 } },
+                    "role": "LR",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 8000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 6000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "HP": { "value": 4000000, "timer": 3000 } },
+                    "role": "PCM",
+                    "action": "Taunt"
+                }
+            ]
+        }
+    ],
+    "ultranulgath": [
+        {
+            "name": "LR AP Loop Taunt",
+            "roles": ["LR (t1)", "AP (t2)", "LOO", "DPS"],
+            "reactives": [],
+            "cycle": [
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "LR (t1)",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "AP (t2)",
+                    "action": "Taunt"
+                }
+            ]
+        }
+    ],
+    "ultradarkon": [
+        {
+            "name": "LOO LR Loop Taunt",
+            "roles": ["LR (t1)", "LOO (t2)", "FB", "DPS"],
+            "reactives": [
+                {
+                    "trigger": { "HP": { "value": 4444444, "timer": 3000 } },
+                    "role": "LOO",
+                    "action": "Quixotic"
+                }
+            ],
+            "cycle": [
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "LR (t1)",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "LOO (t2)",
+                    "action": "Taunt"
+                }
+            ]
+        },
+
+        {
+            "name": "LR SC Loop Taunt",
+            "roles": ["LR (t1)", "LOO", "SC (t2)", "DPS"],
+            "reactives": [
+                {
+                    "trigger": { "HP": { "value": 4444444, "timer": 3000 } },
+                    "role": "LOO",
+                    "action": "Quixotic"
+                }
+            ],
+            "cycle": [
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "LR (t1)",
+                    "action": "Taunt"
+                },
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "SC (t2)",
+                    "action": "Taunt"
+                }
+            ]
+        }
+    ],
+    "ultradage": [
+        {
+            "name": "CAV Loop Taunt",
+            "roles": ["CAV", "LR", "VDK", "DPS"],
+            "reactives": [
+                {
+                    "trigger": { "Message": "Cower behind your meager protection spells!" },
+                    "role": "all",
+                    "action": "Zone"
+                },
+
+                {
+                    "trigger": { "Message": "I possess the full power of the Legion at my disposal." },
+                    "role": "LR",
+                    "action": "Decay"
+                },
+                {
+                    "trigger": { "Message": "I possess the full power of the Legion at my disposal." },
+                    "role": "VDK",
+                    "action": "Decay"
+                },
+
+                {
+                    "trigger": { "Aura": { "name": "Focus", "timer": 1500 } },
+                    "role": "CAV",
+                    "action": "Taunt"
+                }
+            ]
+        }
+    ],
+    "ultraspeaker": [
+        {
+            "name": "Mole Chart 4t",
+            "roles": ["LR", "LOO", "DPS", "AP"],
+            "opening": [
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR",  "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" }
+            ],
+            "cycle": [
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "DPS", "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "DPS", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "DPS", "action": "Taunt" },
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LR", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "AP", "action": "Zone" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LOO", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" }
+
+            ]
+        },
+        {
+            "name": "Saka 3t",
+            "roles": ["LR", "LOO", "DPS", "AP"],
+            "opening": [
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR",  "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" }
+            ],
+            "cycle": [
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "DPS",  "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP",  "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO",  "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO",  "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LR", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "AP", "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LOO", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" }
+            ]
+        },
+        {
+            "name": "Hero 3t",
+            "roles": ["LR", "LOO", "DPS", "AP"],
+            "opening": [
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP",  "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "AP", "action": "Taunt" }
+            ],
+            "cycle": [
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LR",  "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO",  "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR",  "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR",  "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "AP", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "DPS", "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LOO", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "AP", "action": "Taunt" }
+            ]
+        },
+        {
+            "name": "Saka 3t LOO opening",
+            "roles": ["LR", "LOO", "DPS", "AP"],
+            "opening": [
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" }
+            ],
+            "cycle": [
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "DPS", "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LR", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "AP", "action": "Zone" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "AP", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LR", "action": "Taunt" },
+
+                { "trigger": { "Message": "All stand equal beneath the eyes of the Eternal." }, "role": "LOO", "action": "Zone" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "I will make you see the truth." }, "role": "LOO", "action": "Taunt" },
+                { "trigger": { "Message": "You shall listen" }, "role": "LR", "action": "Taunt" }
+            ]
+        }
+    ]
+}

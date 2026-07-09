@@ -32,10 +32,10 @@ impl ScribeParser {
             SfsContent::Mtls(payload) => {
                 let target_token = format!("m:{}", payload.id);
                 let target_name = self.identity_mapper.resolve_actor(&target_token);
-                
+
                 output.push(ScribeEvent::MonsterReset {
                     target: target_name,
-                    base_hp: payload.o.int_hp,
+                    base_hp: payload.o.int_hp.unwrap_or_default(),
                 });
             }
 
@@ -58,7 +58,7 @@ impl ScribeParser {
                     }
                 }
             }
-            
+
             SfsContent::DropItem(payload) => {
                 for (_, item) in payload.items {
                     output.push(ScribeEvent::ItemDropped {
@@ -68,7 +68,7 @@ impl ScribeParser {
                     });
                 }
             }
-                
+
             SfsContent::Seia(payload) => {
                 output.push(ScribeEvent::Seia {
                     data: payload.o
@@ -87,7 +87,7 @@ impl ScribeParser {
                     "S1" => "Luck Hybrid",
                     other => other,
                 };
-                
+
                 output.push(ScribeEvent::ClassUpdated {
                     uid: payload.uid,
                     class_name: payload.class_name,
@@ -98,12 +98,12 @@ impl ScribeParser {
             }
 
             SfsContent::SAct(payload) => {
-                
+
                 output.push(ScribeEvent::SkillsLoaded {
                     active: payload.actions.active,
                     passive: payload.actions.passive,
                 });
-            
+
             }
 
             SfsContent::AuraPlusP(payload) => {
@@ -111,15 +111,15 @@ impl ScribeParser {
                 let auras = payload.auras.into_iter()
                         .map(|a| (a.nam.clone(), a.to_stat_details()))
                         .collect();
-                    
+
                     output.push(ScribeEvent::PassiveAurasApplied { target, auras });
             }
-            
+
             SfsContent::AddGoldExp(payload) => {
-                
+
                 let target_token = format!("m:{}", payload.id);
                 let monster_name = self.identity_mapper.resolve_actor(&target_token);
-            
+
                 output.push(ScribeEvent::GoldExpGained {
                     monster_name,
                     gold: payload.gold,
@@ -184,7 +184,7 @@ impl ScribeParser {
             SfsContent::InitUserData(payload) => {
                 self.identity_mapper.register_player(payload.uid, &payload.data.username);
                 self.identity_mapper.register_staff_level(payload.uid, payload.data.access_level);
-            
+
                 output.push(ScribeEvent::UserDataInitialized {
                     username: payload.data.username,
                     uid: payload.uid,
@@ -205,7 +205,7 @@ impl ScribeParser {
                         class_name: data.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
                     });
                 }
-            
+
             }
 
             SfsContent::Combat(payload) => {
@@ -228,9 +228,9 @@ impl ScribeParser {
                     let caster = self.identity_mapper.resolve_actor(&sarsa.c_inf);
                     for action in sarsa.a {
                         if let Some(act_type) = &action.action_type {
-                            if act_type == "hit" && action.hp > 0 {
+                            if (act_type == "hit" || act_type == "crit") && action.hp > 0 {
                                 let target = self.identity_mapper.resolve_actor(&action.t_inf);
-                                output.push(ScribeEvent::DamageDealt {
+                                output.push(ScribeEvent::EnemyDamage {
                                     caster: caster.clone(),
                                     target,
                                     damage: action.hp,
@@ -239,14 +239,14 @@ impl ScribeParser {
                         }
                     }
                 }
-                
+
                 for sara in payload.sara {
                     let action = sara.action_result;
                     if let Some(act_type) = &action.action_type {
-                        if act_type == "hit" && action.hp > 0 {
+                        if (act_type == "hit" || act_type == "crit") && action.hp > 0 {
                             let caster = self.identity_mapper.resolve_actor(&action.c_inf);
                             let target = self.identity_mapper.resolve_actor(&action.t_inf);
-                            output.push(ScribeEvent::DamageDealt {
+                            output.push(ScribeEvent::PlayerDamage {
                                 caster,
                                 target,
                                 damage: action.hp,
@@ -273,7 +273,7 @@ impl ScribeParser {
                                 caster: self.identity_mapper.resolve_actor(&anim.c_inf),
                                 target: self.identity_mapper.resolve_actor(&anim.t_inf),
                                 message: message_text,
-                                action_type: anim_str, 
+                                action_type: anim_str,
                             });
                         }
                     }
@@ -286,14 +286,14 @@ impl ScribeParser {
                         "aura-" => "Faded",
                         other => other,
                     }.to_string();
-            
-                    
+
+
                     let caster_name = aura_event.caster
                         .map(|c| self.identity_mapper.resolve_actor(&c))
                         .unwrap_or_else(|| "System".to_string());
 
-     
-            
+
+
                     if let Some(details) = aura_event.aura {
                         aura_deltas.push(AuraTimelineDelta {
                             action: action_type.clone(),
@@ -306,7 +306,7 @@ impl ScribeParser {
                             is_new: details.is_new,
                         });
                     }
-            
+
                     if let Some(bulk_details) = aura_event.auras {
                         for details in bulk_details {
                             aura_deltas.push(AuraTimelineDelta {

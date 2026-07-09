@@ -72,7 +72,7 @@ impl PassiveAura {
                 "END" => stats.total_end = Some(effect.val),
                 "WIS" => stats.total_wis = Some(effect.val),
                 "LCK" => stats.total_lck = Some(effect.val),
-                
+
                 "ap" => stats.attack_power = Some(effect.val),
                 "sp" => stats.spell_power = Some(effect.val),
                 "thi" => stats.hit_chance = Some(effect.val),
@@ -80,19 +80,19 @@ impl PassiveAura {
                 "scm" => stats.crit_mod = Some(effect.val),
                 "tha" => stats.haste = Some(effect.val),
                 "dsh" => stats.dash = Some(effect.val),
-                
+
                 "cao" => stats.damage_boost_all = Some(effect.val),
                 "cpo" => stats.physical_boost = Some(effect.val),
                 "cmo" => stats.magic_boost = Some(effect.val),
                 "cdo" => stats.dot_boost = Some(effect.val),
                 "cho" => stats.heal_boost = Some(effect.val),
-                
+
                 "cai" => stats.damage_intake = Some(effect.val),
                 "cpi" => stats.physical_intake = Some(effect.val),
                 "cmi" => stats.magic_intake = Some(effect.val),
                 "cdi" => stats.dot_intake = Some(effect.val),
                 "chi" => stats.healing_intake = Some(effect.val),
-                
+
                 "tdo" => stats.dodge_chance = Some(effect.val),
                 "cmc" => stats.mana_consumption = Some(effect.val),
                 "shb" => stats.health_boost = Some(effect.val),
@@ -114,7 +114,7 @@ pub struct SActPayload {
 pub struct SActActions {
     #[serde(default)]
     pub active: Vec<serde_json::Map<String, Value>>,
-    
+
     #[serde(default)]
     pub passive: Vec<serde_json::Map<String, Value>>,
 }
@@ -159,18 +159,18 @@ pub struct CombatPayload {
 pub struct AnimPayload {
     #[serde(rename = "cInf")]
     pub c_inf: String,
-    
+
     #[serde(rename = "tInf")]
     pub t_inf: String,
-    
+
     #[serde(rename = "animStr")]
     pub anim_str: Option<String>,
-    
+
     #[serde(rename = "strFrame")]
     pub str_frame: Option<String>,
-    
+
     pub fx: Option<String>,
-    
+
     pub msg: Option<String>,
 }
 
@@ -197,7 +197,7 @@ pub struct AuraEvent {
     pub target: String,
     #[serde(rename = "cInf")]
     pub caster: Option<String>,
-    
+
     pub aura: Option<AuraDetails>,
     pub auras: Option<Vec<AuraDetails>>,
 }
@@ -206,10 +206,10 @@ pub struct AuraEvent {
 pub struct AuraDetails {
     #[serde(rename = "nam")]
     pub name: String,
-    
+
     #[serde(rename = "dur")]
     pub duration: Option<i32>,
-    
+
     pub val: Option<i32>,
 
     #[serde(rename = "t")]
@@ -296,7 +296,7 @@ pub struct StatDetails {
     pub dodge_chance: Option<f64>,
     #[serde(rename = "$cmc")]
     pub mana_consumption: Option<f64>,
-    
+
     #[serde(rename = "$shb")]
     pub health_boost: Option<f64>,
     #[serde(rename = "$smb")]
@@ -309,14 +309,14 @@ impl StatDetails {
         let mut add = |name: &str, val: Option<f64>| {
             if let Some(v) = val { changed.push(format!("{}: {}", name, v)); }
         };
-    
+
         add("STR", self.total_str);
         add("INT", self.total_int);
         add("END", self.total_end);
         add("WIS", self.total_wis);
         add("DEX", self.total_dex);
         add("LUK", self.total_lck);
-        
+
         add("Attack Power", self.attack_power);
         add("Spell Power", self.spell_power);
         add("All Out", self.damage_boost_all);
@@ -329,7 +329,7 @@ impl StatDetails {
         add("Magic In", self.magic_intake);
         add("Dot In", self.dot_intake);
         add("Heal In", self.healing_intake);
-        
+
         add("Mana Consumption", self.mana_consumption);
         add("Crit Chance", self.crit_rate);
         add("Dodge", self.dodge_chance);
@@ -339,7 +339,7 @@ impl StatDetails {
         add("Mana Boost", self.mana_boost);
         add("Hit Chance", self.hit_chance);
         add("Crit Mod", self.crit_mod);
-    
+
         changed
     }
 }
@@ -389,7 +389,13 @@ pub struct MtlsStats {
     #[serde(rename = "intState")]
     pub int_state: Option<i32>,
     #[serde(rename = "intHP")]
-    pub int_hp: i32,
+    pub int_hp: Option<i32>,
     #[serde(rename = "intMP")]
     pub int_mp: Option<i32>,
+
+    #[serde(rename = "intAct")]
+    pub int_act: Option<i32>,
+    #[serde(rename = "intSG")]
+    pub int_sg: Option<i32>,
+
 }

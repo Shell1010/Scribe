@@ -8,6 +8,7 @@ use std::sync::mpsc;
 struct Settings {
     port: Vec<u16>,
     device_name: Option<String>,
+    username: Option<String>,
 }
 
 fn main() {
@@ -18,10 +19,10 @@ fn main() {
     let port = settings.port;
     let device = settings.device_name.filter(|s| !s.is_empty());
 
-    run_tui_mode(port, device);
+    run_tui_mode(port, device, settings.username.filter(|s| !s.is_empty()));
 }
 
-fn run_tui_mode(port: Vec<u16>, device: Option<String>) {
+fn run_tui_mode(port: Vec<u16>, device: Option<String>, username: Option<String>) {
     let (tx, rx) = mpsc::channel();
     
     std::thread::spawn(move || {
@@ -41,7 +42,7 @@ fn run_tui_mode(port: Vec<u16>, device: Option<String>) {
     let mapper = IdentityMapper::new();
 
     let mut parser = ScribeParser::new(mapper);
-    let app = tui::app::App::new(Some("output.log"));
+    let app = tui::app::App::new(Some("output.log"), username.expect("Expected username"));
     let mut terminal = tui::setup_terminal().unwrap();
     
     let _ = tui::run_app(&mut terminal, app, rx, &mut parser);
