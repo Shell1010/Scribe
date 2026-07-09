@@ -24,11 +24,6 @@ pub enum Trigger {
         name: String,
         timer: u32
     },
-    LoopAura {
-        name: String,
-        roles: Vec<String>,
-        timer: u32,
-    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

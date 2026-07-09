@@ -21,8 +21,12 @@ Scribe is a Rust-based network packet sniffer for AdventureQuest Worlds (AQW). U
 port = [5594, 5588] # 5594/5588
 device_name = ""
 ```
-3. Run the executable, yell at me if it doesn't work.
 
+3. Copy the [mechanics.json](mechanics.json) file to the same folder.
+4. Run the executable, yell at me if it doesn't work.
+
+## Mechanics/Ultras
+This script provides an indicator for Ultras, I've made a configuration system that allows you to setup indicators for a variety of Ultras. It parses the information in `mechanics.json` to determine what to track and how. Currently somewhat limited functionality, but I intend to improve it. Documentation for this feature is provided [here](docs/mechanics.md). Kinda requires you to know how the JSON format works, it's not very complex.
 
 ## Building from Source
 1. Clone the repository.
