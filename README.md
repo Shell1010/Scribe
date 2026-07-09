@@ -3,7 +3,7 @@
 Scribe is a Rust-based network packet sniffer for AdventureQuest Worlds (AQW). Utility tool that is not a bot.
 
 ## Features
-- Combat Metrics, track KPM, GPM, EPM, Drops, Drop Rates (assumed).
+- Combat Metrics, track KPM, GPM, EPM, Drops, Drop Rates (assumed), GDPS/DPS, Recent GDPS/DPS.
 - View Class Metadata, including Skills, Passives, and Potions/Scrolls.
 - Aura tracking.
 - Stat Updates.
@@ -39,7 +39,9 @@ port = [5594, 5588] # 5594/5588
 device_name = ""
 ```
 
-4. Build the thingamajig
+4. Copy the [mechanics.json](mechanics.json) file to the same folder.
+
+5. Build the thingamajig
 
 ```bash
 cargo build --release
