@@ -47,7 +47,6 @@ impl ScribeParser {
             }
 
             SfsContent::LoadInventoryBig(payload) => {
-                // Move names directly out of the payload instead of cloning.
                 let items_map = payload.items.into_iter()
                     .map(|item| (item.item_id, item.s_name))
                     .collect();
@@ -133,20 +132,17 @@ impl ScribeParser {
             SfsContent::MoveToArea(payload) => {
                 self.identity_mapper.set_current_map(&payload.map_name);
 
-                // Register players by iterating by reference — no clone needed.
                 for p in &payload.uo_branch {
                     if let Some(id) = p.ent_id {
                         self.identity_mapper.register_player(id, &p.username);
                     }
                 }
 
-                // Build lookup dict by moving mondef entries (no clone).
                 let dict: std::collections::HashMap<u32, String> = payload.mondef
                     .into_iter()
                     .map(|m| (m.mon_id, m.mon_name))
                     .collect();
 
-                // register_monster now takes &str — no format! allocation for id.
                 for m in &payload.mon_branch {
                     if let Some(name) = dict.get(&m.mon_id) {
                         let token = format!("m:{}", m.mon_map_id);
@@ -164,7 +160,7 @@ impl ScribeParser {
             }
 
             SfsContent::UpdateGuild(payload) => {
-                // Iterate by reference — register_player only needs &str.
+
                 for member in &payload.guild.user_list {
                     self.identity_mapper.register_player(member.id, &member.username);
                 }
@@ -298,7 +294,6 @@ impl ScribeParser {
                 }
 
                 for aura_event in payload.a {
-                    // Resolve once per aura event, not per aura detail.
                     let caster_name = aura_event.caster
                         .as_deref()
                         .map(|c| self.identity_mapper.resolve_actor(c))
@@ -312,7 +307,6 @@ impl ScribeParser {
                         other => other,
                     }.to_string();
 
-                    // Process single aura detail.
                     if let Some(details) = aura_event.aura {
                         aura_deltas.push(AuraTimelineDelta {
                             action: action_type.clone(),
@@ -326,7 +320,6 @@ impl ScribeParser {
                         });
                     }
 
-                    // Process bulk aura details — reuse resolved names.
                     if let Some(bulk) = aura_event.auras {
                         for details in bulk {
                             aura_deltas.push(AuraTimelineDelta {

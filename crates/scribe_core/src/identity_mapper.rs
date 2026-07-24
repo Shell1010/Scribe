@@ -9,8 +9,7 @@ use std::time::{Duration, Instant};
 
 const CACHE_PATH: &str = "scribe_cache.json";
 
-// Only flush to disk at most once every 5 seconds to avoid
-// hammering the filesystem on rapid MoveToArea packets.
+
 const FLUSH_INTERVAL: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -28,8 +27,9 @@ pub struct IdentityMapper {
     monsters: Arc<RwLock<HashMap<String, HashMap<String, String>>>>,
     access_levels: Arc<RwLock<HashMap<u32, i32>>>,
     current_map: Arc<RwLock<String>>,
-    // Dirty flag: set by register_* methods, cleared by sync_to_disk.
-    // Avoids acquiring read locks + serializing when nothing changed.
+    // Dirty flag: set by register_* methods, cleared by sync_to_disk
+    // Avoids acquiring read locks + serializing when nothing changed
+    // Avoid unnecessary serializations
     dirty: Arc<AtomicBool>,
     last_flush: Arc<RwLock<Instant>>,
 }
@@ -46,7 +46,7 @@ impl IdentityMapper {
         let mut loaded_monsters = HashMap::new();
         let mut loaded_access_levels = HashMap::new();
 
-        // Only touch disk if the file exists — skip the stat call otherwise.
+        // Only touch disk if the file exists, skip the stat call otherwise.
         if Path::new(CACHE_PATH).exists() {
             if let Ok(mut file) = File::open(CACHE_PATH) {
                 let mut content = String::new();
@@ -71,14 +71,13 @@ impl IdentityMapper {
         }
     }
 
-    // Batched flush: only writes if dirty AND enough time has elapsed.
+    // Only writes if dirty AND enough time has elapsed
     // This turns N writes per MoveToArea into at most 1.
     fn sync_to_disk(&self) {
         if !self.dirty.load(Ordering::Relaxed) {
             return;
         }
 
-        // Rate-limit: skip if we flushed recently.
         {
             let last = self.last_flush.read().unwrap();
             if last.elapsed() < FLUSH_INTERVAL {

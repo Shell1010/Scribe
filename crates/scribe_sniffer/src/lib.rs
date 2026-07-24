@@ -6,8 +6,7 @@ use std::collections::HashMap;
 mod sfs;
 use sfs::SfsSession;
 
-// Use a tuple key (src_ip, src_port, dst_ip, dst_port) instead of format!()
-// to avoid heap allocation per packet. u32+u16+u32+u16 = 12 bytes on stack.
+
 type SessionKey = (u32, u16, u32, u16);
 
 pub struct ScribeSniffer {
@@ -51,7 +50,6 @@ impl ScribeSniffer {
             && let TransportHeader::Tcp(tcp) = transport
             && let etherparse::NetHeaders::Ipv4(ipv4, _) = net_header
         {
-            // Build a stack-allocated session key — zero heap allocation.
             let key: SessionKey = (
                 u32::from_ne_bytes(ipv4.source),
                 tcp.source_port,
