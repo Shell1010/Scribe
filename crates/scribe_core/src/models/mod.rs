@@ -1,30 +1,24 @@
 pub mod combat;
+pub mod guild;
 pub mod identity;
 pub mod state;
-pub mod guild;
-
 
 use serde::{Deserialize, Serialize};
 
-
-pub use combat::{MonsterStats, PlayerStats, AuraEvent,
-    AuraDetails, AuraPlusPPayload, AddGoldExpPayload, 
-    SActPayload, UpdateClassPayload, DropItemPayload,
-    AddItemsPayload, SarsaEvent, MtlsPayload, 
-    SaraEvent};
-pub use identity::{MoveToAreaPayload, PlayerBranch, MonsterDefinition, LoadInventoryBigPayload};
-pub use state::StateDelta;
+pub use combat::{
+    AddGoldExpPayload, AddItemsPayload, AuraDetails, AuraEvent, AuraPlusPPayload, DropItemPayload,
+    MonsterStats, MtlsPayload, PlayerStats, SActPayload, SaraEvent, SarsaEvent, UpdateClassPayload,
+};
 pub use guild::UpdateGuildPayload;
-
+pub use identity::{LoadInventoryBigPayload, MonsterDefinition, MoveToAreaPayload, PlayerBranch};
+pub use state::StateDelta;
 
 use crate::models::combat::StatUpdatePayload;
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitUserDatasPayload {
     pub a: Vec<InitUserDataPayload>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitUserDataPayload {
@@ -36,15 +30,16 @@ pub struct InitUserDataPayload {
 pub struct UserDataDetails {
     #[serde(rename = "strUsername")]
     pub username: String,
-    
+
     #[serde(rename = "intAccessLevel")]
     pub access_level: i32,
-    
+
     #[serde(rename = "strClassName")]
     pub class_name: Option<String>,
 
+    #[serde(rename = "intLevel", default)]
+    pub level: Option<i32>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SfsEnvelope {
@@ -57,17 +52,16 @@ pub struct SfsBody {
     pub o: SfsContent,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "cmd")]
 #[allow(clippy::large_enum_variant)]
 pub enum SfsContent {
     #[serde(rename = "ct")]
     Combat(combat::CombatPayload),
-    
+
     #[serde(rename = "uotls")]
     UserState(state::UserStatePayload),
-    
+
     #[serde(rename = "moveToArea")]
     MoveToArea(identity::MoveToAreaPayload),
 
@@ -76,7 +70,7 @@ pub enum SfsContent {
 
     #[serde(rename = "playerDeath")]
     PlayerDeath(state::PlayerDeathPayload),
-    
+
     #[serde(rename = "initUserData")]
     InitUserData(InitUserDataPayload),
 
@@ -91,16 +85,16 @@ pub enum SfsContent {
 
     #[serde(rename = "addGoldExp")]
     AddGoldExp(AddGoldExpPayload),
-    
+
     #[serde(rename = "aura+p")]
     AuraPlusP(AuraPlusPPayload),
-    
+
     #[serde(rename = "sAct")]
     SAct(SActPayload),
 
     #[serde(rename = "seia")]
     Seia(combat::SeiaPayload),
-    
+
     #[serde(rename = "updateClass")]
     UpdateClass(UpdateClassPayload),
 
@@ -112,4 +106,25 @@ pub enum SfsContent {
 
     #[serde(rename = "mtls")]
     Mtls(MtlsPayload),
+
+    #[serde(rename = "who")]
+    Who(WhoPayload),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WhoPayload {
+    #[serde(default)]
+    pub users: std::collections::HashMap<String, WhoUser>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WhoUser {
+    #[serde(rename = "ID")]
+    pub id: u32,
+    #[serde(rename = "sName")]
+    pub name: String,
+    #[serde(rename = "sClass")]
+    pub class: String,
+    #[serde(rename = "iLvl")]
+    pub level: i32,
 }

@@ -7,10 +7,10 @@ pub struct MoveToAreaPayload {
 
     #[serde(rename = "uoBranch", default)]
     pub uo_branch: Vec<PlayerBranch>,
-    
+
     #[serde(default)]
     pub mondef: Vec<MonsterDefinition>,
-    
+
     #[serde(rename = "monBranch", default)]
     pub mon_branch: Vec<MonsterBranch>,
 }
@@ -19,7 +19,7 @@ pub struct MoveToAreaPayload {
 pub struct PlayerBranch {
     #[serde(rename = "entID")]
     pub ent_id: Option<u32>,
-    
+
     #[serde(rename = "strUsername")]
     pub username: String,
 }
@@ -28,7 +28,7 @@ pub struct PlayerBranch {
 pub struct MonsterDefinition {
     #[serde(rename = "MonID")]
     pub mon_id: u32,
-    
+
     #[serde(rename = "strMonName")]
     pub mon_name: String,
 }
@@ -37,16 +37,16 @@ pub struct MonsterDefinition {
 pub struct MonsterBranch {
     #[serde(rename = "MonMapID")]
     pub mon_map_id: u32,
-    
+
     #[serde(rename = "MonID")]
     pub mon_id: u32,
-    
+
     #[serde(rename = "intHP")]
     pub hp: Option<i32>,
-    
+
     #[serde(rename = "intHPMax")]
     pub max_hp: Option<i32>,
-    
+
     #[serde(rename = "iLvl")]
     pub level: Option<i32>,
 }

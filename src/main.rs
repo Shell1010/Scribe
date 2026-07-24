@@ -1,7 +1,7 @@
-use serde::Deserialize;
-use scribe_sniffer::ScribeSniffer;
 use scribe_core::IdentityMapper;
 use scribe_parser::ScribeParser;
+use scribe_sniffer::ScribeSniffer;
+use serde::Deserialize;
 use std::sync::mpsc;
 
 #[derive(Deserialize)]
@@ -9,42 +9,56 @@ struct Settings {
     port: Vec<u16>,
     device_name: Option<String>,
     username: Option<String>,
+    verbose: Option<bool>,
 }
 
 fn main() {
     let settings: Settings = config::Config::builder()
         .add_source(config::File::with_name("config"))
-        .build().unwrap().try_deserialize().unwrap();
-        
+        .build()
+        .unwrap()
+        .try_deserialize()
+        .unwrap();
+
     let port = settings.port;
     let device = settings.device_name.filter(|s| !s.is_empty());
+    let verbose = settings.verbose.unwrap_or(false);
 
-    run_tui_mode(port, device, settings.username.filter(|s| !s.is_empty()));
+    run_tui_mode(
+        port,
+        device,
+        settings.username.filter(|s| !s.is_empty()),
+        verbose,
+    );
 }
 
-fn run_tui_mode(port: Vec<u16>, device: Option<String>, username: Option<String>) {
+fn run_tui_mode(port: Vec<u16>, device: Option<String>, username: Option<String>, verbose: bool) {
     let (tx, rx) = mpsc::channel();
-    
-    std::thread::spawn(move || {
-        match ScribeSniffer::new(device.as_deref(), port) {
-            Ok(mut sniffer) => loop {
-                for j in sniffer.next_json_objects() {
-                    if tx.send(j).is_err() { break; }
+
+    std::thread::spawn(move || match ScribeSniffer::new(device.as_deref(), port) {
+        Ok(mut sniffer) => loop {
+            for j in sniffer.next_json_objects() {
+                if tx.send(j).is_err() {
+                    break;
                 }
-            },
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                std::process::exit(1);
             }
+        },
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
         }
     });
 
     let mapper = IdentityMapper::new();
 
     let mut parser = ScribeParser::new(mapper);
-    let app = tui::app::App::new(Some("output.log"), username.expect("Expected username"));
+    let app = tui::app::App::new(
+        Some("output.log"),
+        username.expect("Expected username"),
+        verbose,
+    );
     let mut terminal = tui::setup_terminal().unwrap();
-    
+
     let _ = tui::run_app(&mut terminal, app, rx, &mut parser);
     tui::restore_terminal(terminal).unwrap();
 }

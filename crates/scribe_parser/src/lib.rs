@@ -5,23 +5,24 @@ use events::{AuraTimelineDelta, StatTimelineDelta};
 pub use events::ScribeEvent;
 pub struct ScribeParser {
     identity_mapper: IdentityMapper,
+    monster_levels: std::collections::HashMap<u32, i32>,
 }
 
 impl ScribeParser {
-
     pub fn new(identity_mapper: IdentityMapper) -> Self {
-        Self { identity_mapper }
+        Self {
+            identity_mapper,
+            monster_levels: std::collections::HashMap::new(),
+        }
     }
 
-
-    pub fn parse_packet(&self, raw_json: &str) -> Vec<ScribeEvent> {
+    pub fn parse_packet(&mut self, raw_json: &str) -> Vec<ScribeEvent> {
         let mut output = Vec::new();
         let envelope: SfsEnvelope = match serde_json::from_str(raw_json) {
             Ok(env) => env,
             Err(_e) => {
                 if cfg!(debug_assertions) {
-                    // println!("{}", raw_json);
-                    output.push(ScribeEvent::Unknown { data: raw_json.to_string()});
+                    output.push(ScribeEvent::Unknown { data: raw_json.to_string() });
                 };
                 return output
             }
@@ -31,19 +32,25 @@ impl ScribeParser {
 
             SfsContent::Mtls(payload) => {
                 let target_token = format!("m:{}", payload.id);
-                let target_name = self.identity_mapper.resolve_actor(&target_token);
-
                 output.push(ScribeEvent::MonsterReset {
-                    target: target_name,
+                    target: self.identity_mapper.resolve_actor(&target_token),
                     base_hp: payload.o.int_hp.unwrap_or_default(),
+                    level: self.monster_levels.get(&(payload.id as u32)).copied().unwrap_or(0),
                 });
             }
 
+            SfsContent::Who(payload) => {
+                let users: Vec<(String, String, i32)> = payload.users.values()
+                    .map(|u| (u.name.to_lowercase(), u.class.clone(), u.level))
+                    .collect();
+                output.push(ScribeEvent::RoomUsersDetailed { users });
+            }
+
             SfsContent::LoadInventoryBig(payload) => {
-                let mut items_map = std::collections::HashMap::new();
-                for item in payload.items {
-                    items_map.insert(item.item_id, item.s_name);
-                }
+                // Move names directly out of the payload instead of cloning.
+                let items_map = payload.items.into_iter()
+                    .map(|item| (item.item_id, item.s_name))
+                    .collect();
                 output.push(ScribeEvent::InventoryLoaded { items: items_map });
             }
 
@@ -70,9 +77,7 @@ impl ScribeParser {
             }
 
             SfsContent::Seia(payload) => {
-                output.push(ScribeEvent::Seia {
-                    data: payload.o
-                });
+                output.push(ScribeEvent::Seia { data: payload.o });
             }
 
             SfsContent::UpdateClass(payload) => {
@@ -98,57 +103,73 @@ impl ScribeParser {
             }
 
             SfsContent::SAct(payload) => {
-
                 output.push(ScribeEvent::SkillsLoaded {
                     active: payload.actions.active,
                     passive: payload.actions.passive,
                 });
-
             }
 
             SfsContent::AuraPlusP(payload) => {
                 let target = self.identity_mapper.resolve_actor(&payload.target_info);
                 let auras = payload.auras.into_iter()
-                        .map(|a| (a.nam.clone(), a.to_stat_details()))
-                        .collect();
-
-                    output.push(ScribeEvent::PassiveAurasApplied { target, auras });
+                    .map(|a| {
+                        let stats = a.to_stat_details();
+                        (a.nam, stats)
+                    })
+                    .collect();
+                output.push(ScribeEvent::PassiveAurasApplied { target, auras });
             }
 
             SfsContent::AddGoldExp(payload) => {
-
                 let target_token = format!("m:{}", payload.id);
-                let monster_name = self.identity_mapper.resolve_actor(&target_token);
-
                 output.push(ScribeEvent::GoldExpGained {
-                    monster_name,
+                    monster_name: self.identity_mapper.resolve_actor(&target_token),
                     gold: payload.gold,
                     exp: payload.exp,
                     bonus_gold: payload.bonus_gold,
                 });
             }
+
             SfsContent::MoveToArea(payload) => {
                 self.identity_mapper.set_current_map(&payload.map_name);
+
+                // Register players by iterating by reference — no clone needed.
                 for p in &payload.uo_branch {
                     if let Some(id) = p.ent_id {
                         self.identity_mapper.register_player(id, &p.username);
                     }
                 }
-                let dict: std::collections::HashMap<_, _> = payload.mondef.into_iter().map(|m| (m.mon_id, m.mon_name)).collect();
-                for m in payload.mon_branch {
+
+                // Build lookup dict by moving mondef entries (no clone).
+                let dict: std::collections::HashMap<u32, String> = payload.mondef
+                    .into_iter()
+                    .map(|m| (m.mon_id, m.mon_name))
+                    .collect();
+
+                // register_monster now takes &str — no format! allocation for id.
+                for m in &payload.mon_branch {
                     if let Some(name) = dict.get(&m.mon_id) {
-                        self.identity_mapper.register_monster(&payload.map_name, format!("m:{}", m.mon_map_id), name);
+                        let token = format!("m:{}", m.mon_map_id);
+                        self.identity_mapper.register_monster(&payload.map_name, &token, name);
+                    }
+                    if let Some(lvl) = m.level {
+                        self.monster_levels.insert(m.mon_map_id, lvl);
                     }
                 }
-                output.push(ScribeEvent::RoomPlayersUpdate { players: payload.uo_branch.iter().map(|p| p.username.clone()).collect() });
+
+                output.push(ScribeEvent::RoomPlayersUpdate {
+                    players: payload.uo_branch.into_iter().map(|p| p.username.to_lowercase()).collect(),
+                });
                 output.push(ScribeEvent::ZoneChange { room: payload.map_name });
             }
 
             SfsContent::UpdateGuild(payload) => {
-                for member in payload.guild.user_list.clone().into_iter() {
+                // Iterate by reference — register_player only needs &str.
+                for member in &payload.guild.user_list {
                     self.identity_mapper.register_player(member.id, &member.username);
                 }
             }
+
             SfsContent::PlayerDeath(payload) => {
                 let victim_token = format!("p:{}", payload.user_id);
                 let killer_token = format!("{}:{}", payload.ent_type, payload.destroyer_id);
@@ -158,27 +179,24 @@ impl ScribeParser {
                     killer: self.identity_mapper.resolve_actor(&killer_token),
                 });
             }
+
             SfsContent::StatUpdate(payload) => {
-                output.push(ScribeEvent::StatUpdate {
-                    stats: payload.sta,
-                });
+                output.push(ScribeEvent::StatUpdate { stats: payload.sta });
             }
+
             SfsContent::UserState(payload) => {
                 if let Some(ent_id) = payload.ent_id {
                     self.identity_mapper.register_player(ent_id, &payload.username);
-                }
 
-                if let Some(ent_id) = payload.ent_id {
-                    let other_event = ScribeEvent::StateChange {
-                        username: payload.username.clone(),
+                    output.push(ScribeEvent::StateChange {
+                        username: payload.username.to_lowercase(),
                         state: payload.state_data.int_state.unwrap_or(1),
                         entity_id: ent_id,
                         level: payload.level.unwrap_or(100),
-                    };
-                    output.push(other_event);
+                        max_hp: payload.state_data.max_hp,
+                        max_mp: payload.state_data.max_mp,
+                    });
                 }
-
-
             }
 
             SfsContent::InitUserData(payload) => {
@@ -186,10 +204,11 @@ impl ScribeParser {
                 self.identity_mapper.register_staff_level(payload.uid, payload.data.access_level);
 
                 output.push(ScribeEvent::UserDataInitialized {
-                    username: payload.data.username,
+                    username: payload.data.username.to_lowercase(),
                     uid: payload.uid,
                     access_level: payload.data.access_level,
                     class_name: payload.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
+                    level: payload.data.level.unwrap_or(0),
                 });
             }
 
@@ -199,13 +218,13 @@ impl ScribeParser {
                     self.identity_mapper.register_staff_level(data.uid, data.data.access_level);
 
                     output.push(ScribeEvent::UserDataInitialized {
-                        username: data.data.username,
+                        username: data.data.username.to_lowercase(),
                         uid: data.uid,
                         access_level: data.data.access_level,
                         class_name: data.data.class_name.unwrap_or_else(|| "Unknown Class".to_string()),
+                        level: data.data.level.unwrap_or(0),
                     });
                 }
-
             }
 
             SfsContent::Combat(payload) => {
@@ -213,13 +232,14 @@ impl ScribeParser {
                 let mut aura_deltas = Vec::new();
 
                 for (monster_idx, data) in payload.m {
-                    let resolved_name = self.identity_mapper.resolve_actor(&format!("m:{}", monster_idx));
+                    let resolved = self.identity_mapper.resolve_actor(&format!("m:{}", monster_idx));
                     if data.hp.is_some() || data.shield.is_some() {
                         stats_deltas.push(StatTimelineDelta {
-                            target: resolved_name,
+                            target: resolved,
                             hp: data.hp,
                             mp: None,
                             shield: data.shield,
+                            is_monster: true,
                         });
                     }
                 }
@@ -228,11 +248,10 @@ impl ScribeParser {
                     let caster = self.identity_mapper.resolve_actor(&sarsa.c_inf);
                     for action in sarsa.a {
                         if let Some(act_type) = &action.action_type {
-                            if (act_type == "hit" || act_type == "crit") && action.hp > 0 {
-                                let target = self.identity_mapper.resolve_actor(&action.t_inf);
+                            if (act_type == "hit" || act_type == "crit" || act_type == "d") && action.hp > 0 {
                                 output.push(ScribeEvent::EnemyDamage {
                                     caster: caster.clone(),
-                                    target,
+                                    target: self.identity_mapper.resolve_actor(&action.t_inf),
                                     damage: action.hp,
                                 });
                             }
@@ -243,12 +262,10 @@ impl ScribeParser {
                 for sara in payload.sara {
                     let action = sara.action_result;
                     if let Some(act_type) = &action.action_type {
-                        if (act_type == "hit" || act_type == "crit") && action.hp > 0 {
-                            let caster = self.identity_mapper.resolve_actor(&action.c_inf);
-                            let target = self.identity_mapper.resolve_actor(&action.t_inf);
+                        if (act_type == "hit" || act_type == "crit" || act_type == "d") && action.hp > 0 {
                             output.push(ScribeEvent::PlayerDamage {
-                                caster,
-                                target,
+                                caster: self.identity_mapper.resolve_actor(&action.c_inf),
+                                target: self.identity_mapper.resolve_actor(&action.t_inf),
                                 damage: action.hp,
                             });
                         }
@@ -258,10 +275,11 @@ impl ScribeParser {
                 for (username, data) in payload.p {
                     if data.hp.is_some() || data.mp.is_some() {
                         stats_deltas.push(StatTimelineDelta {
-                            target: username,
+                            target: username.to_lowercase(),
                             hp: data.hp,
                             mp: data.mp,
                             shield: None,
+                            is_monster: false,
                         });
                     }
                 }
@@ -280,6 +298,13 @@ impl ScribeParser {
                 }
 
                 for aura_event in payload.a {
+                    // Resolve once per aura event, not per aura detail.
+                    let caster_name = aura_event.caster
+                        .as_deref()
+                        .map(|c| self.identity_mapper.resolve_actor(c))
+                        .unwrap_or_else(|| "System".to_string());
+                    let target_name = self.identity_mapper.resolve_actor(&aura_event.target);
+
                     let action_type = match aura_event.cmd.as_str() {
                         "aura+" => "Applied",
                         "aura++" => "Refreshed",
@@ -287,18 +312,12 @@ impl ScribeParser {
                         other => other,
                     }.to_string();
 
-
-                    let caster_name = aura_event.caster
-                        .map(|c| self.identity_mapper.resolve_actor(&c))
-                        .unwrap_or_else(|| "System".to_string());
-
-
-
+                    // Process single aura detail.
                     if let Some(details) = aura_event.aura {
                         aura_deltas.push(AuraTimelineDelta {
                             action: action_type.clone(),
                             caster: caster_name.clone(),
-                            target: self.identity_mapper.resolve_actor(&aura_event.target),
+                            target: target_name.clone(),
                             aura_name: details.name,
                             value: details.val,
                             duration: details.duration,
@@ -307,12 +326,13 @@ impl ScribeParser {
                         });
                     }
 
-                    if let Some(bulk_details) = aura_event.auras {
-                        for details in bulk_details {
+                    // Process bulk aura details — reuse resolved names.
+                    if let Some(bulk) = aura_event.auras {
+                        for details in bulk {
                             aura_deltas.push(AuraTimelineDelta {
                                 action: action_type.clone(),
                                 caster: caster_name.clone(),
-                                target: self.identity_mapper.resolve_actor(&aura_event.target),
+                                target: target_name.clone(),
                                 aura_name: details.name,
                                 value: details.val,
                                 duration: details.duration,

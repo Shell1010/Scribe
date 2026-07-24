@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddItemsPayload {
     pub items: std::collections::HashMap<String, AddItemDetails>,
@@ -15,7 +14,6 @@ pub struct AddItemDetails {
     #[serde(rename = "iQtyNow")]
     pub i_qty_now: u32,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DropItemPayload {
@@ -32,26 +30,31 @@ pub struct DropItemDetails {
     pub i_qty: u32,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddGoldExpPayload {
-    #[serde(rename = "intGold")] pub gold: i32,
-    #[serde(rename = "intExp")] pub exp: i32,
-    #[serde(rename = "bonusGold", default)] pub bonus_gold: i32,
-    #[serde(rename = "typ")] pub typ: String,
+    #[serde(rename = "intGold")]
+    pub gold: i32,
+    #[serde(rename = "intExp")]
+    pub exp: i32,
+    #[serde(rename = "bonusGold", default)]
+    pub bonus_gold: i32,
+    #[serde(rename = "typ")]
+    pub typ: String,
     pub id: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuraPlusPPayload {
-    #[serde(rename = "tInf")] pub target_info: String,
+    #[serde(rename = "tInf")]
+    pub target_info: String,
     pub auras: Vec<PassiveAura>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PassiveAura {
     pub nam: String,
-    #[serde(default)] pub e: Vec<AuraEffect>,
+    #[serde(default)]
+    pub e: Vec<AuraEffect>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,7 +107,6 @@ impl PassiveAura {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SActPayload {
     pub actions: SActActions,
@@ -127,17 +129,20 @@ pub struct SeiaPayload {
     pub i_res: Option<i32>,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateClassPayload {
     pub uid: u32,
-    #[serde(rename = "sClassName")] pub class_name: String,
-    #[serde(rename = "sClassCat")] pub class_cat: String,
-    #[serde(rename = "iCP", default)] pub cp: i32,
-    #[serde(rename = "sDesc", default)] pub desc: String,
-    #[serde(rename = "aMRM", default)] pub mrm: Vec<String>,
+    #[serde(rename = "sClassName")]
+    pub class_name: String,
+    #[serde(rename = "sClassCat")]
+    pub class_cat: String,
+    #[serde(rename = "iCP", default)]
+    pub cp: i32,
+    #[serde(rename = "sDesc", default)]
+    pub desc: String,
+    #[serde(rename = "aMRM", default)]
+    pub mrm: Vec<String>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CombatPayload {
@@ -219,8 +224,6 @@ pub struct AuraDetails {
     pub is_new: Option<bool>,
 }
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatUpdatePayload {
     pub sta: StatDetails,
@@ -280,7 +283,6 @@ pub struct StatDetails {
     #[serde(rename = "$cho")]
     pub heal_boost: Option<f64>,
 
-
     #[serde(rename = "$cai")]
     pub damage_intake: Option<f64>,
     #[serde(rename = "$cpi")]
@@ -307,7 +309,9 @@ impl StatDetails {
     pub fn to_formatted_list(&self) -> Vec<String> {
         let mut changed = Vec::new();
         let mut add = |name: &str, val: Option<f64>| {
-            if let Some(v) = val { changed.push(format!("{}: {}", name, v)); }
+            if let Some(v) = val {
+                changed.push(format!("{}: {}", name, v));
+            }
         };
 
         add("STR", self.total_str);
@@ -360,7 +364,6 @@ pub struct SarsaAction {
     pub t_inf: String,
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaraEvent {
     #[serde(rename = "actionResult")]
@@ -397,5 +400,4 @@ pub struct MtlsStats {
     pub int_act: Option<i32>,
     #[serde(rename = "intSG")]
     pub int_sg: Option<i32>,
-
 }

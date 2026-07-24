@@ -5,30 +5,39 @@ pub struct SfsSession {
 impl SfsSession {
     pub fn new() -> Self {
         Self {
-            buffer: Vec::new(),
+            // Pre-allocate for typical TCP payload sizes.
+            buffer: Vec::with_capacity(4096),
         }
     }
 
     pub fn process(&mut self, data: &[u8]) -> Vec<String> {
         self.buffer.extend_from_slice(data);
 
-        let mut extracted_objects = vec![];
+        let mut extracted = Vec::new();
+        let mut start = 0;
 
-        while let Some(null_index) = self.buffer.iter().position(|&b| b == 0x00) {
-            let frame_byte = self.buffer.drain(0..null_index).collect::<Vec<u8>>();
+        // Scan for null-byte frame delimiters using an index instead of
+        // mutating the buffer per frame. This avoids the old O(n) drain+collect
+        // and O(n) remove(0) per extracted object.
+        while let Some(pos) = self.buffer[start..].iter().position(|&b| b == 0x00) {
+            let abs = start + pos;
 
-            if !self.buffer.is_empty() {
-                self.buffer.remove(0);
-            }
-
-            if let Ok(raw_value) = String::from_utf8(frame_byte) {
-                let trimmed = raw_value.trim().to_string();
+            // Zero-copy UTF-8 validation on the frame slice.
+            if let Ok(raw) = std::str::from_utf8(&self.buffer[start..abs]) {
+                let trimmed = raw.trim();
                 if trimmed.starts_with('{') && trimmed.ends_with('}') {
-                    extracted_objects.push(trimmed.to_string());
+                    extracted.push(trimmed.to_string());
                 }
             }
+
+            start = abs + 1; // skip past the null delimiter
         }
 
-        extracted_objects
+        // Single drain at the end to remove all processed bytes at once.
+        if start > 0 {
+            self.buffer.drain(0..start);
+        }
+
+        extracted
     }
 }

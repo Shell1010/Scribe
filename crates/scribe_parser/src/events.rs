@@ -20,6 +20,7 @@ pub struct StatTimelineDelta {
     pub hp: Option<i32>,
     pub mp: Option<i32>,
     pub shield: Option<i32>,
+    pub is_monster: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,11 +30,20 @@ pub enum ScribeEvent {
         stats: Vec<StatTimelineDelta>,
         auras: Vec<AuraTimelineDelta>,
     },
-    EnemyDamage { caster: String, target: String, damage: i32 },
-    PlayerDamage { caster: String, target: String, damage: i32 },
+    EnemyDamage {
+        caster: String,
+        target: String,
+        damage: i32,
+    },
+    PlayerDamage {
+        caster: String,
+        target: String,
+        damage: i32,
+    },
     MonsterReset {
         target: String,
         base_hp: i32,
+        level: i32,
     },
 
     Death {
@@ -48,6 +58,8 @@ pub enum ScribeEvent {
         state: i32,
         entity_id: u32,
         level: i32,
+        max_hp: Option<i32>,
+        max_mp: Option<i32>,
     },
 
     UserDataInitialized {
@@ -55,6 +67,7 @@ pub enum ScribeEvent {
         uid: u32,
         access_level: i32,
         class_name: String,
+        level: i32,
     },
 
     BossAction {
@@ -65,11 +78,11 @@ pub enum ScribeEvent {
     },
 
     StatUpdate {
-        stats: StatDetails
+        stats: StatDetails,
     },
 
     Unknown {
-        data: String
+        data: String,
     },
 
     GoldExpGained {
@@ -81,21 +94,29 @@ pub enum ScribeEvent {
 
     PassiveAurasApplied {
         target: String,
-        auras: Vec<(String, StatDetails)>
+        auras: Vec<(String, StatDetails)>,
     },
 
     SkillsLoaded {
         active: Vec<Map<String, Value>>,
-        passive: Vec<Map<String, Value>>
+        passive: Vec<Map<String, Value>>,
     },
 
     Seia {
-        data: Map<String, Value>
+        data: Map<String, Value>,
     },
 
-    ClassUpdated { uid: u32, class_name: String, category: String, desc: String, mrm: Vec<String> },
+    ClassUpdated {
+        uid: u32,
+        class_name: String,
+        category: String,
+        desc: String,
+        mrm: Vec<String>,
+    },
 
-    RoomPlayersUpdate { players: Vec<String> },
+    RoomPlayersUpdate {
+        players: Vec<String>,
+    },
 
     ItemDropped {
         item_id: u32,
@@ -113,4 +134,7 @@ pub enum ScribeEvent {
         items: std::collections::HashMap<u32, String>,
     },
 
+    RoomUsersDetailed {
+        users: Vec<(String, String, i32)>, // (name, class, level)
+    },
 }

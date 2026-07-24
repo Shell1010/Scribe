@@ -15,7 +15,7 @@ pub struct GuildDetails {
 pub struct GuildMember {
     #[serde(rename = "ID")]
     pub id: u32,
-    
+
     #[serde(rename = "userName")]
     pub username: String,
 }
