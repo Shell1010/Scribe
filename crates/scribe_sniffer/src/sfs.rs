@@ -1,3 +1,5 @@
+use crate::decode::normalize_frame;
+
 pub struct SfsSession {
     buffer: Vec<u8>,
 }
@@ -18,15 +20,15 @@ impl SfsSession {
         while let Some(pos) = self.buffer[start..].iter().position(|&b| b == 0x00) {
             let abs = start + pos;
             if let Ok(raw) = std::str::from_utf8(&self.buffer[start..abs]) {
-                let trimmed = raw.trim();
-                if trimmed.starts_with('{') && trimmed.ends_with('}') {
-                    extracted.push(trimmed.to_string());
+                // Accepts plain JSON or `Z` + base64(zlib(JSON)); skips anything else.
+                if let Some(json) = normalize_frame(raw) {
+                    extracted.push(json);
                 }
             }
 
-            start = abs + 1; 
+            start = abs + 1;
         }
-        
+
         if start > 0 {
             self.buffer.drain(0..start);
         }

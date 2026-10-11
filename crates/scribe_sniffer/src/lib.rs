@@ -3,6 +3,7 @@ use etherparse::{PacketHeaders, PayloadSlice, TransportHeader};
 use std::collections::HashMap;
 
 
+mod decode;
 mod sfs;
 use sfs::SfsSession;
 

@@ -9,6 +9,8 @@ use std::collections::VecDeque;
 
 use crate::app::DpsSample;
 
+// ts is entirely slop
+
 const BRAILLE_LINE: [char; 9] = ['⠀', '⢀', '⢄', '⢆', '⢇', '⢧', '⢯', '⢟', '⣿'];
 
 pub fn render_sparkline(
